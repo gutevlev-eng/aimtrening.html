@@ -1,0 +1,328 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Аим-тренажер: 3 режима тренировки</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #1a1a2e;
+            color: #e0e0e0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 20px;
+            margin: 0;
+        }
+
+        h1 {
+            color: #16213e;
+            background-color: #e94560;
+            padding: 15px 30px;
+            border-radius: 10px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.5);
+        }
+
+        .game-container {
+            display: flex;
+            gap: 30px;
+            flex-wrap: wrap;
+            justify-content: center;
+            margin-top: 30px;
+        }
+
+        .game-box {
+            background-color: #16213e;
+            border: 2px solid #0f3460;
+            border-radius: 15px;
+            padding: 20px;
+            text-align: center;
+            width: 300px;
+            box-shadow: 0 4px 15px rgba(233, 69, 96, 0.2);
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+
+        .game-box:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 8px 25px rgba(233, 69, 96, 0.4);
+        }
+
+        .game-box h3 {
+            color: #e94560;
+            margin-top: 0;
+        }
+
+        #arena1, #arena2, #arena3 {
+            width: 100%;
+            height: 200px;
+            background-color: #0f3460;
+            border-radius: 10px;
+            margin: 15px 0;
+            position: relative;
+            overflow: hidden;
+            cursor: crosshair;
+            user-select: none;
+        }
+
+        .target {
+            position: absolute;
+            width: 20px;
+            height: 20px;
+            background-color: #e94560;
+            border-radius: 50%;
+            border: 2px solid #fff;
+            transform: translate(-50%, -50%);
+            box-shadow: 0 0 10px #e94560;
+        }
+
+        .stats {
+            font-size: 14px;
+            color: #b8b8b8;
+            margin-bottom: 10px;
+        }
+
+        button {
+            background-color: #e94560;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 25px;
+            font-size: 16px;
+            cursor: pointer;
+            font-weight: bold;
+            transition: background-color 0.3s;
+        }
+
+        button:hover {
+            background-color: #ff2a4d;
+        }
+
+        .timer {
+            font-size: 18px;
+            font-weight: bold;
+            color: #4ecca3;
+        }
+
+        .accuracy {
+            color: #4ecca3;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+
+    <h1>🎯 Аим-тренажер: 3 режима</h1>
+    
+    <div class="game-container">
+        <!-- Игра 1: Статичные мишени -->
+        <div class="game-box">
+            <h3>Режим 1: Статика</h3>
+            <div class="stats">Попадания: <span id="hits1">0</span> | Всего: <span id="shots1">0</span> | Точность: <span id="acc1" class="accuracy">0%</span></div>
+            <div id="arena1"></div>
+            <button onclick="startGame1()">Начать (10 целей)</button>
+        </div>
+
+        <!-- Игра 2: Появляющиеся мишени -->
+        <div class="game-box">
+            <h3>Режим 2: Реакция</h3>
+            <div class="stats">Попадания: <span id="hits2">0</span> | Всего: <span id="shots2">0</span> | Точность: <span id="acc2" class="accuracy">0%</span></div>
+            <div id="arena2"></div>
+            <div class="timer">Время: <span id="time2">60</span> сек</div>
+            <button onclick="startGame2()">Начать (60 секунд)</button>
+        </div>
+
+        <!-- Игра 3: Двигающиеся мишени -->
+        <div class="game-box">
+            <h3>Режим 3: Движение</h3>
+            <div class="stats">Попадания: <span id="hits3">0</span> | Всего: <span id="shots3">0</span> | Точность: <span id="acc3" class="accuracy">0%</span></div>
+            <div id="arena3"></div>
+            <div class="timer">Время: <span id="time3">60</span> сек</div>
+            <button onclick="startGame3()">Начать (60 секунд)</button>
+        </div>
+    </div>
+
+    <script>
+        /* === РЕЖИМ 1: Статичные мишени === */
+        function startGame1() {
+            resetGame1();
+            const arena = document.getElementById('arena1');
+            let targetsLeft = 10;
+            
+            function spawnTarget() {
+                if (targetsLeft <= 0) return;
+                const target = document.createElement('div');
+                target.className = 'target';
+                target.style.left = Math.random() * (arena.offsetWidth - 20) + 10 + 'px';
+                target.style.top = Math.random() * (arena.offsetHeight - 20) + 10 + 'px';
+                
+                target.addEventListener('click', function() {
+                    arena.removeChild(target);
+                    updateStats(1, 1, 0);
+                    targetsLeft--;
+                    if (targetsLeft > 0) {
+                        spawnTarget();
+                    }
+                });
+
+                arena.appendChild(target);
+            }
+
+            spawnTarget();
+        }
+
+        /* === РЕЖИМ 2: Появляющиеся мишени (таймер) === */
+        function startGame2() {
+            resetGame2();
+            const arena = document.getElementById('arena2');
+            let timeLeft = 60;
+            let timerInterval;
+
+            function spawnTarget() {
+                const target = document.createElement('div');
+                target.className = 'target';
+                target.style.left = Math.random() * (arena.offsetWidth - 20) + 10 + 'px';
+                target.style.top = Math.random() * (arena.offsetHeight - 20) + 10 + 'px';
+
+                target.addEventListener('click', function() {
+                    arena.removeChild(target);
+                    updateStats(2, 1, 0);
+                    spawnTarget(); // Сразу спавним новую
+                });
+
+                // Если мишень не кликнули за 2 секунды, она пропадает (промах)
+                setTimeout(() => {
+                    if (target.parentElement === arena) {
+                        arena.removeChild(target);
+                        updateStats(2, 0, 1);
+                        spawnTarget();
+                    }
+                }, 2000);
+
+                arena.appendChild(target);
+            }
+
+            spawnTarget();
+
+            timerInterval = setInterval(() => {
+                timeLeft--;
+                document.getElementById('time2').textContent = timeLeft;
+                if (timeLeft <= 0) {
+                    clearInterval(timerInterval);
+                }
+            }, 1000);
+        }
+
+        /* === РЕЖИМ 3: Двигающиеся мишени === */
+        function startGame3() {
+            resetGame3();
+            const arena = document.getElementById('arena3');
+            let timeLeft = 60;
+            let targets = [];
+            let timerInterval;
+
+            function createMovingTarget() {
+                const target = document.createElement('div');
+                target.className = 'target';
+                let x = Math.random() * (arena.offsetWidth - 40) + 20;
+                let y = Math.random() * (arena.offsetHeight - 40) + 20;
+                let dx = (Math.random() - 0.5) * 4;
+                let dy = (Math.random() - 0.5) * 4;
+
+                target.style.left = x + 'px';
+                target.style.top = y + 'px';
+
+                target.addEventListener('click', function() {
+                    const index = targets.indexOf(target);
+                    if (index > -1) targets.splice(index, 1);
+                    arena.removeChild(target);
+                    updateStats(3, 1, 0);
+                    createMovingTarget();
+                });
+
+                targets.push(target);
+                arena.appendChild(target);
+            }
+
+            // Анимация движения
+            function moveTargets() {
+                targets.forEach(target => {
+                    let rect = target.getBoundingClientRect();
+                    let arenaRect = arena.getBoundingClientRect();
+                    let x = parseFloat(target.style.left);
+                    let y = parseFloat(target.style.top);
+                    let dx = parseFloat(target.dataset.dx) || 2;
+                    let dy = parseFloat(target.dataset.dy) || 2;
+
+                    // Отскок от стенок
+                    if (x <= 0 || x >= arena.offsetWidth - 20) dx = -dx;
+                    if (y <= 0 || y >= arena.offsetHeight - 20) dy = -dy;
+
+                    x += dx;
+                    y += dy;
+
+                    target.style.left = x + 'px';
+                    target.style.top = y + 'px';
+                    target.dataset.dx = dx;
+                    target.dataset.dy = dy;
+                });
+            }
+
+            // Запуск
+            for (let i = 0; i < 5; i++) createMovingTarget();
+            setInterval(moveTargets, 16); // ~60 FPS
+            
+            timerInterval = setInterval(() => {
+                timeLeft--;
+                document.getElementById('time3').textContent = timeLeft;
+                if (timeLeft <= 0) {
+                    clearInterval(timerInterval);
+                    targets.forEach(t => arena.removeChild(t));
+                    targets = [];
+                }
+            }, 1000);
+        }
+
+        /* === ОБЩИЕ ФУНКЦИИ === */
+        function updateStats(gameId, hit, miss) {
+            const hitsEl = document.getElementById('hits' + gameId);
+            const shotsEl = document.getElementById('shots' + gameId);
+            const accEl = document.getElementById('acc' + gameId);
+            
+            let hits = parseInt(hitsEl.textContent);
+            let shots = parseInt(shotsEl.textContent);
+            
+            hits += hit;
+            shots += hit + miss;
+            
+            hitsEl.textContent = hits;
+            shotsEl.textContent = shots;
+            accEl.textContent = shots > 0 ? Math.round((hits / shots) * 100) : 0;
+        }
+
+        function resetGame1() {
+            document.getElementById('arena1').innerHTML = '';
+            document.getElementById('hits1').textContent = 0;
+            document.getElementById('shots1').textContent = 0;
+            document.getElementById('acc1').textContent = '0%';
+        }
+
+        function resetGame2() {
+            document.getElementById('arena2').innerHTML = '';
+            document.getElementById('hits2').textContent = 0;
+            document.getElementById('shots2').textContent = 0;
+            document.getElementById('acc2').textContent = '0%';
+            document.getElementById('time2').textContent = '60';
+        }
+
+        function resetGame3() {
+            document.getElementById('arena3').innerHTML = '';
+            document.getElementById('hits3').textContent = 0;
+            document.getElementById('shots3').textContent = 0;
+            document.getElementById('acc3').textContent = '0%';
+            document.getElementById('time3').textContent = '60';
+        }
+    </script>
+
+</body>
+</html>
