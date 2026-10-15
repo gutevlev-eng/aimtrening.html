@@ -5,463 +5,210 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>3D AIM LAB — Tactical FPS Trainer</title>
 <style>
-  :root {
-    --bg-dark: #070a10;
-    --panel-bg: rgba(14, 20, 32, 0.88);
-    --border-clr: rgba(0, 240, 255, 0.25);
-    --accent: #00f0ff;
-    --accent-pink: #ff2a6d;
-    --accent-green: #05d5aa;
-    --accent-gold: #ffcc00;
-    --text-main: #eef4ff;
-    --text-muted: #8496b0;
-  }
-
-  * {
-    box-sizing: border-box;
-    margin: 0;
-    padding: 0;
-    user-select: none;
-  }
-
-  body, html {
-    width: 100%;
-    height: 100%;
-    overflow: hidden;
-    background: var(--bg-dark);
-    font-family: 'Segoe UI', Roboto, system-ui, -apple-system, sans-serif;
-    color: var(--text-main);
-  }
-
-  #gameCanvas {
-    display: block;
-    width: 100vw;
-    height: 100vh;
-    cursor: crosshair;
-  }
-
-  /* Верхний игровой HUD */
-  #hud {
-    position: fixed;
-    top: 18px;
-    left: 50%;
-    transform: translateX(-50%);
-    display: flex;
-    gap: 18px;
-    padding: 10px 26px;
-    background: rgba(9, 14, 23, 0.82);
-    border: 1px solid var(--border-clr);
-    border-radius: 14px;
-    backdrop-filter: blur(8px);
-    box-shadow: 0 8px 30px rgba(0, 0, 0, 0.55);
-    z-index: 5;
-    pointer-events: none;
-    transition: opacity 0.25s ease;
-  }
-
-  .hud-item {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    min-width: 90px;
-  }
-
-  .hud-label {
-    font-size: 11px;
-    text-transform: uppercase;
-    letter-spacing: 1.4px;
-    color: var(--text-muted);
-    margin-bottom: 2px;
-  }
-
-  .hud-value {
-    font-size: 24px;
-    font-weight: 800;
-    font-variant-numeric: tabular-nums;
-    color: var(--text-main);
-    text-shadow: 0 0 12px rgba(0, 240, 255, 0.35);
-  }
-
-  .hud-value.accent { color: var(--accent); }
-  .hud-value.gold { color: var(--accent-gold); }
-  .hud-value.green { color: var(--accent-green); }
-
-  #escHint {
-    position: fixed;
-    top: 22px;
-    left: 24px;
-    padding: 8px 14px;
-    font-size: 12px;
-    letter-spacing: 0.8px;
-    color: var(--text-muted);
-    background: rgba(9, 14, 23, 0.75);
-    border: 1px solid rgba(255,255,255,0.1);
-    border-radius: 8px;
-    z-index: 5;
-    pointer-events: none;
-  }
-
-  /* Оверлей меню и результатов */
-  .overlay {
-    position: fixed;
-    inset: 0;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    background: radial-gradient(circle at center, rgba(10, 18, 32, 0.65) 0%, rgba(4, 7, 14, 0.92) 100%);
-    backdrop-filter: blur(6px);
-    z-index: 20;
-    transition: opacity 0.25s ease;
-  }
-
-  .overlay.hidden {
-    opacity: 0;
-    pointer-events: none;
-  }
-
-  .panel {
-    width: min(920px, 94vw);
-    max-height: 92vh;
-    overflow-y: auto;
-    background: var(--panel-bg);
-    border: 1px solid var(--border-clr);
-    border-radius: 20px;
-    padding: 32px;
-    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.75), 0 0 40px rgba(0, 240, 255, 0.08);
-  }
-
-  .header-row {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 24px;
-    border-bottom: 1px solid rgba(255,255,255,0.08);
-    padding-bottom: 16px;
-  }
-
-  .logo-title {
-    font-size: 28px;
-    font-weight: 900;
-    letter-spacing: 2px;
-    text-transform: uppercase;
-    background: linear-gradient(90deg, #ffffff, var(--accent));
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-  }
-
-  .logo-sub {
-    font-size: 13px;
-    color: var(--text-muted);
-    margin-top: 4px;
-  }
-
-  .section-title {
-    font-size: 13px;
-    text-transform: uppercase;
-    letter-spacing: 1.5px;
-    color: var(--accent);
-    margin-bottom: 12px;
-    font-weight: 700;
-  }
-
-  /* Карточки режимов */
-  .modes-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(195px, 1fr));
-    gap: 14px;
-    margin-bottom: 24px;
-  }
-
-  .mode-card {
-    background: rgba(255, 255, 255, 0.03);
-    border: 1px solid rgba(255, 255, 255, 0.1);
-    border-radius: 14px;
-    padding: 16px;
-    cursor: pointer;
-    transition: all 0.2s ease;
-    position: relative;
-  }
-
-  .mode-card:hover {
-    background: rgba(0, 240, 255, 0.06);
-    border-color: rgba(0, 240, 255, 0.4);
-    transform: translateY(-2px);
-  }
-
-  .mode-card.active {
-    background: rgba(0, 240, 255, 0.12);
-    border-color: var(--accent);
-    box-shadow: 0 0 20px rgba(0, 240, 255, 0.2);
-  }
-
-  .mode-name {
-    font-size: 16px;
-    font-weight: 800;
-    margin-bottom: 6px;
-    color: #fff;
-  }
-
-  .mode-desc {
-    font-size: 12px;
-    line-height: 1.45;
-    color: var(--text-muted);
-    margin-bottom: 12px;
-  }
-
-  .mode-best {
-    font-size: 11px;
-    font-weight: 700;
-    color: var(--accent-gold);
-    letter-spacing: 0.5px;
-  }
-
-  /* Настройки */
-  .settings-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
-    gap: 16px;
-    margin-bottom: 26px;
-  }
-
-  .setting-box {
-    background: rgba(0, 0, 0, 0.28);
-    border: 1px solid rgba(255, 255, 255, 0.07);
-    border-radius: 12px;
-    padding: 14px 16px;
-  }
-
-  .setting-header {
-    display: flex;
-    justify-content: space-between;
-    font-size: 13px;
-    margin-bottom: 10px;
-    color: var(--text-main);
-    font-weight: 600;
-  }
-
-  .setting-val {
-    color: var(--accent);
-    font-weight: 700;
-  }
-
-  input[type="range"] {
-    width: 100%;
-    accent-color: var(--accent);
-    cursor: pointer;
-  }
-
-  .pill-group {
-    display: flex;
-    gap: 8px;
-  }
-
-  .pill-btn {
-    flex: 1;
-    padding: 8px 6px;
-    background: rgba(255,255,255,0.05);
-    border: 1px solid rgba(255,255,255,0.12);
-    color: var(--text-muted);
-    border-radius: 8px;
-    font-size: 12px;
-    font-weight: 700;
-    cursor: pointer;
-    transition: 0.15s;
-  }
-
-  .pill-btn.active {
-    background: var(--accent);
-    color: #041019;
-    border-color: var(--accent);
-  }
-
-  /* Кнопки запуска */
-  .actions-row {
-    display: flex;
-    gap: 14px;
-    align-items: center;
-    justify-content: space-between;
-    flex-wrap: wrap;
-  }
-
-  .start-btn {
-    flex: 1;
-    min-width: 240px;
-    padding: 16px 28px;
-    font-size: 16px;
-    font-weight: 900;
-    text-transform: uppercase;
-    letter-spacing: 1.5px;
-    color: #031017;
-    background: linear-gradient(90deg, var(--accent), var(--accent-green));
-    border: none;
-    border-radius: 12px;
-    cursor: pointer;
-    box-shadow: 0 8px 25px rgba(0, 240, 255, 0.35);
-    transition: transform 0.15s ease, box-shadow 0.15s ease;
-  }
-
-  .start-btn:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 12px 30px rgba(0, 240, 255, 0.55);
-  }
-
-  .secondary-btn {
-    padding: 16px 22px;
-    font-size: 14px;
-    font-weight: 700;
-    color: var(--text-main);
-    background: rgba(255,255,255,0.06);
-    border: 1px solid rgba(255,255,255,0.16);
-    border-radius: 12px;
-    cursor: pointer;
-    transition: 0.15s;
-  }
-
-  .secondary-btn:hover {
-    background: rgba(255,255,255,0.12);
-  }
-
-  /* Статистика после раунда */
-  .stats-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
-    gap: 14px;
-    margin: 20px 0 28px;
-  }
-
-  .stat-card {
-    background: rgba(255,255,255,0.03);
-    border: 1px solid rgba(255,255,255,0.09);
-    border-radius: 14px;
-    padding: 16px;
-    text-align: center;
-  }
-
-  .stat-card .lbl {
-    font-size: 11px;
-    text-transform: uppercase;
-    letter-spacing: 1px;
-    color: var(--text-muted);
-    margin-bottom: 6px;
-  }
-
-  .stat-card .val {
-    font-size: 26px;
-    font-weight: 900;
-    color: #fff;
-  }
-
-  .stat-card .val.cyan { color: var(--accent); }
-  .stat-card .val.green { color: var(--accent-green); }
-  .stat-card .val.gold { color: var(--accent-gold); }
-  .stat-card .val.pink { color: var(--accent-pink); }
+:root {
+  --bg: #070a10;
+  --panel: rgba(14,20,32,.94);
+  --border: rgba(0,240,255,.25);
+  --accent: #00f0ff;
+  --pink: #ff2a6d;
+  --green: #05d5aa;
+  --gold: #ffcc00;
+  --text: #eef4ff;
+  --muted: #8496b0;
+}
+* { box-sizing:border-box; margin:0; padding:0; user-select:none; }
+html,body {
+  width:100%; height:100%; overflow:hidden;
+  background:var(--bg); color:var(--text);
+  font-family:"Segoe UI",Roboto,system-ui,sans-serif;
+}
+button,input { font:inherit; }
+button { touch-action:manipulation; }
+button:focus-visible { outline:2px solid white; outline-offset:3px; }
+#gameCanvas { display:block; width:100%; height:100%; cursor:crosshair; }
+#hud {
+  position:fixed; top:18px; left:50%; transform:translateX(-50%);
+  display:flex; gap:18px; padding:10px 24px;
+  background:rgba(9,14,23,.85); border:1px solid var(--border);
+  border-radius:14px; backdrop-filter:blur(8px);
+  box-shadow:0 8px 30px #0008; z-index:5; pointer-events:none;
+}
+.hud-item { display:flex; flex-direction:column; align-items:center; min-width:80px; }
+.hud-label { font-size:10px; text-transform:uppercase; letter-spacing:1.3px; color:var(--muted); }
+.hud-value { font-size:24px; font-weight:800; font-variant-numeric:tabular-nums; }
+.accent { color:var(--accent); }
+.gold { color:var(--gold); }
+.green { color:var(--green); }
+.pink { color:var(--pink); }
+#escHint {
+  position:fixed; bottom:18px; left:20px; padding:9px 13px;
+  font-size:12px; color:var(--muted); background:#090e17bb;
+  border:1px solid #ffffff18; border-radius:8px;
+  z-index:5; pointer-events:none;
+}
+.overlay {
+  position:fixed; inset:0; display:flex; align-items:center; justify-content:center;
+  background:radial-gradient(circle,rgba(10,18,32,.68),rgba(4,7,14,.94));
+  backdrop-filter:blur(6px); z-index:20; padding:14px;
+}
+.hidden { display:none !important; }
+.panel {
+  width:min(960px,100%); max-height:94vh; overflow-y:auto;
+  background:var(--panel); border:1px solid var(--border); border-radius:20px;
+  padding:30px; box-shadow:0 20px 60px #000b,0 0 40px #00f0ff10;
+  scrollbar-width:thin; scrollbar-color:#245466 #101725;
+}
+.panel.small { width:min(500px,100%); }
+.header-row {
+  display:flex; align-items:center; justify-content:space-between;
+  gap:16px; margin-bottom:22px; padding-bottom:16px;
+  border-bottom:1px solid #ffffff14;
+}
+.logo-title {
+  font-size:27px; font-weight:900; letter-spacing:1.6px;
+  background:linear-gradient(90deg,#fff,var(--accent));
+  -webkit-background-clip:text; background-clip:text; color:transparent;
+}
+.logo-sub { font-size:13px; color:var(--muted); margin-top:6px; line-height:1.5; }
+.section-title {
+  font-size:12px; text-transform:uppercase; letter-spacing:1.5px;
+  color:var(--accent); margin-bottom:12px; font-weight:700;
+}
+.modes-grid {
+  display:grid; grid-template-columns:repeat(4,1fr); gap:12px; margin-bottom:24px;
+}
+.mode-card {
+  text-align:left; color:var(--text); background:#ffffff08;
+  border:1px solid #ffffff1a; border-radius:14px; padding:15px;
+  cursor:pointer; transition:background .2s,border-color .2s,transform .2s;
+}
+.mode-card:hover { background:#00f0ff0e; border-color:#00f0ff66; transform:translateY(-2px); }
+.mode-card.active { background:#00f0ff1b; border-color:var(--accent); box-shadow:0 0 18px #00f0ff18; }
+.mode-name { font-size:15px; font-weight:800; margin-bottom:8px; color:#fff; }
+.mode-desc { font-size:12px; line-height:1.5; color:var(--muted); margin-bottom:12px; }
+.mode-best { font-size:11px; font-weight:700; color:var(--gold); }
+.settings-grid {
+  display:grid; grid-template-columns:repeat(2,1fr); gap:14px; margin-bottom:24px;
+}
+.setting-box { background:#0004; border:1px solid #ffffff12; border-radius:12px; padding:14px 16px; }
+.setting-header { display:flex; justify-content:space-between; gap:10px; font-size:13px; margin-bottom:12px; font-weight:600; }
+.setting-val { color:var(--accent); white-space:nowrap; }
+input[type=range] { width:100%; accent-color:var(--accent); cursor:pointer; }
+.pill-group { display:flex; gap:7px; }
+.pill-btn {
+  flex:1; padding:9px 5px; background:#ffffff0c; border:1px solid #ffffff20;
+  color:var(--muted); border-radius:8px; font-size:12px; font-weight:700; cursor:pointer;
+}
+.pill-btn.active { background:var(--accent); color:#041019; border-color:var(--accent); }
+.actions-row { display:flex; gap:12px; align-items:center; flex-wrap:wrap; }
+.start-btn {
+  flex:1; padding:16px 22px; font-size:15px; font-weight:900;
+  text-transform:uppercase; letter-spacing:1px; color:#031017;
+  background:linear-gradient(90deg,var(--accent),var(--green));
+  border:0; border-radius:12px; cursor:pointer; box-shadow:0 8px 25px #00f0ff35;
+}
+.start-btn:hover { filter:brightness(1.12); }
+.secondary-btn {
+  padding:14px 18px; font-size:13px; font-weight:700; color:var(--text);
+  background:#ffffff0f; border:1px solid #ffffff29; border-radius:12px; cursor:pointer;
+}
+.secondary-btn:hover { background:#ffffff20; }
+.stats-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:13px; margin:20px 0 26px; }
+.stat-card { background:#ffffff08; border:1px solid #ffffff17; border-radius:14px; padding:17px 12px; text-align:center; }
+.lbl { font-size:10px; text-transform:uppercase; letter-spacing:1px; color:var(--muted); margin-bottom:7px; }
+.val { font-size:25px; font-weight:900; }
+.note { margin-top:15px; font-size:12px; line-height:1.6; color:var(--muted); }
+#errorText { color:#ff8ba9; min-height:18px; margin-top:12px; font-size:13px; }
+.pause-actions { display:grid; gap:12px; margin-top:24px; }
+@media(max-width:760px) {
+  .modes-grid { grid-template-columns:repeat(2,1fr); }
+  .panel { padding:20px; }
+  .logo-title { font-size:21px; }
+  .header-row { flex-wrap:wrap; }
+  #hud { gap:10px; padding:9px 12px; width:max-content; max-width:98vw; top:8px; }
+  .hud-item { min-width:53px; }
+  .hud-value { font-size:19px; }
+  .hud-label { font-size:8px; }
+}
+@media(max-width:460px) {
+  .settings-grid { grid-template-columns:1fr; }
+  .stats-grid { grid-template-columns:repeat(2,1fr); }
+  .mode-card { padding:12px; }
+}
 </style>
 </head>
 <body>
 
 <canvas id="gameCanvas"></canvas>
 
-<!-- Подсказка в углу -->
-<div id="escHint">ESC — Меню / Пауза &nbsp;|&nbsp; R — Быстрый рестарт</div>
+<div id="escHint">ESC — пауза · R — рестарт · ЛКМ — выстрел / удержание</div>
 
-<!-- Верхний HUD -->
 <div id="hud">
-  <div class="hud-item">
-    <span class="hud-label">Время</span>
-    <span class="hud-value accent" id="hudTime">60.0</span>
-  </div>
-  <div class="hud-item">
-    <span class="hud-label">Очки</span>
-    <span class="hud-value gold" id="hudScore">0</span>
-  </div>
-  <div class="hud-item">
-    <span class="hud-label">Точность</span>
-    <span class="hud-value green" id="hudAcc">100%</span>
-  </div>
-  <div class="hud-item">
-    <span class="hud-label">Реакция</span>
-    <span class="hud-value" id="hudReact">— мс</span>
-  </div>
-  <div class="hud-item">
-    <span class="hud-label">Серия</span>
-    <span class="hud-value" id="hudStreak">0</span>
-  </div>
+  <div class="hud-item"><span class="hud-label">Время</span><span class="hud-value accent" id="hudTime">60.0</span></div>
+  <div class="hud-item"><span class="hud-label">Очки</span><span class="hud-value gold" id="hudScore">0</span></div>
+  <div class="hud-item"><span class="hud-label">Точность</span><span class="hud-value green" id="hudAcc">—</span></div>
+  <div class="hud-item"><span class="hud-label">Реакция</span><span class="hud-value" id="hudReact">—</span></div>
+  <div class="hud-item"><span class="hud-label">Серия</span><span class="hud-value" id="hudStreak">0</span></div>
 </div>
 
-<!-- Главное меню -->
 <div class="overlay" id="menuOverlay">
   <div class="panel">
     <div class="header-row">
       <div>
         <div class="logo-title">3D AIM LAB // CYBER RANGE</div>
-        <div class="logo-sub">Полноценный 3D-тренажёр аима от первого лица (Pointer Lock 360°)</div>
+        <div class="logo-sub">Тренажёр от первого лица · Свободный обзор мышью · Точное попадание по прицелу</div>
       </div>
       <button class="secondary-btn" id="fullscreenBtn">На весь экран</button>
     </div>
 
-    <div class="section-title">1. Выберите программу тренировки</div>
+    <div class="section-title">1. Программа тренировки</div>
     <div class="modes-grid" id="modesContainer">
-      <div class="mode-card active" data-mode="gridshot">
+      <button class="mode-card active" data-mode="gridshot">
         <div class="mode-name">GRIDSHOT 3D</div>
-        <div class="mode-desc">3 объёмные сферы одновременно в 3D-пространстве. Максимальный темп стрельбы.</div>
+        <div class="mode-desc">Три объёмные сферы одновременно. Стреляйте быстро и точно.</div>
         <div class="mode-best" id="best-gridshot">Рекорд: 0</div>
-      </div>
-      <div class="mode-card" data-mode="tracking">
+      </button>
+      <button class="mode-card" data-mode="tracking">
         <div class="mode-name">TRACKING 3D</div>
-        <div class="mode-desc">Удерживайте зажатую ЛКМ на плавно маневрирующей 3D-сфере в глубине арены.</div>
+        <div class="mode-desc">Зажмите ЛКМ и удерживайте прицел на движущейся сфере.</div>
         <div class="mode-best" id="best-tracking">Рекорд: 0</div>
-      </div>
-      <div class="mode-card" data-mode="flick">
+      </button>
+      <button class="mode-card" data-mode="flick">
         <div class="mode-name">FLICK & REFLEX</div>
-        <div class="mode-desc">Выстрел в центр активирует цель на периферии. Точный замер реакции в мс.</div>
+        <div class="mode-desc">Попадите в центр, затем переведите прицел на боковую цель.</div>
         <div class="mode-best" id="best-flick">Рекорд: 0</div>
-      </div>
-      <div class="mode-card" data-mode="strafe">
+      </button>
+      <button class="mode-card" data-mode="strafe">
         <div class="mode-name">STRAFE BOTS</div>
-        <div class="mode-desc">Стрейфящиеся 3D-силуэты на разной дистанции. Headshot даёт двойные очки!</div>
+        <div class="mode-desc">Движущиеся силуэты. Попадание в голову даёт двойные очки.</div>
         <div class="mode-best" id="best-strafe">Рекорд: 0</div>
-      </div>
+      </button>
     </div>
 
     <div class="section-title">2. Параметры камеры и полигона</div>
     <div class="settings-grid">
       <div class="setting-box">
-        <div class="setting-header">
-          <span>Чувствительность мыши (Sens)</span>
-          <span class="setting-val" id="sensVal">1.00</span>
-        </div>
-        <input type="range" id="sensInput" min="0.2" max="3.0" step="0.05" value="1.0">
+        <div class="setting-header"><span>Чувствительность мыши</span><span class="setting-val" id="sensVal">1.00</span></div>
+        <input type="range" id="sensInput" min="0.2" max="3" step="0.05" value="1">
       </div>
-
       <div class="setting-box">
-        <div class="setting-header">
-          <span>Длительность сессии</span>
-          <span class="setting-val" id="timeVal">60 сек</span>
-        </div>
+        <div class="setting-header"><span>Длительность сессии</span><span class="setting-val" id="timeVal">60 сек</span></div>
         <div class="pill-group" id="timeGroup">
           <button class="pill-btn" data-time="30">30 с</button>
           <button class="pill-btn active" data-time="60">60 с</button>
           <button class="pill-btn" data-time="90">90 с</button>
         </div>
       </div>
-
       <div class="setting-box">
-        <div class="setting-header">
-          <span>Размер мишеней</span>
-          <span class="setting-val" id="sizeVal">Средний</span>
-        </div>
+        <div class="setting-header"><span>Размер мишеней</span><span class="setting-val" id="sizeVal">Средний</span></div>
         <div class="pill-group" id="sizeGroup">
           <button class="pill-btn" data-size="0.72">Малый</button>
-          <button class="pill-btn active" data-size="1.0">Средний</button>
+          <button class="pill-btn active" data-size="1">Средний</button>
           <button class="pill-btn" data-size="1.35">Крупный</button>
         </div>
       </div>
-
       <div class="setting-box">
-        <div class="setting-header">
-          <span>Цвет прицела</span>
-          <span class="setting-val" id="crossVal">Циан</span>
-        </div>
+        <div class="setting-header"><span>Цвет прицела</span><span class="setting-val" id="crossVal">Циан</span></div>
         <div class="pill-group" id="crossGroup">
           <button class="pill-btn active" data-cross="#00f0ff">Циан</button>
           <button class="pill-btn" data-cross="#00ff66">Зелёный</button>
@@ -472,49 +219,44 @@
     </div>
 
     <div class="actions-row">
-      <button class="start-btn" id="startBtn">Начать тренировку (Клик для захвата 3D-камеры)</button>
+      <button class="start-btn" id="startBtn">Начать тренировку</button>
     </div>
+    <div class="note">Управление: мышь вправо — взгляд вправо; мышь вверх — взгляд вверх. Для игры нужны мышь и поддержка Pointer Lock.</div>
+    <div id="errorText" role="status"></div>
   </div>
 </div>
 
-<!-- Окно результатов -->
+<div class="overlay hidden" id="pauseOverlay">
+  <div class="panel small">
+    <div class="logo-title">ПАУЗА</div>
+    <div class="logo-sub">Таймер остановлен. Нажмите «Продолжить», чтобы снова захватить мышь.</div>
+    <div class="pause-actions">
+      <button class="start-btn" id="resumeBtn">Продолжить</button>
+      <button class="secondary-btn" id="restartBtn">Начать заново</button>
+      <button class="secondary-btn" id="pauseMenuBtn">В главное меню</button>
+    </div>
+    <div class="note" id="pauseError"></div>
+  </div>
+</div>
+
 <div class="overlay hidden" id="resultOverlay">
   <div class="panel">
     <div class="header-row">
       <div>
         <div class="logo-title">ОТЧЁТ ТРЕНИРОВКИ</div>
-        <div class="logo-sub" id="resModeSub">Режим: GRIDSHOT 3D</div>
+        <div class="logo-sub" id="resModeSub"></div>
       </div>
-      <div class="hud-value gold" id="resNewRecord" style="font-size:16px;"></div>
+      <div class="gold" id="resNewRecord" style="font-weight:800"></div>
     </div>
-
     <div class="stats-grid">
-      <div class="stat-card">
-        <div class="lbl">Итоговый счёт</div>
-        <div class="val gold" id="resScore">0</div>
-      </div>
-      <div class="stat-card">
-        <div class="lbl">Точность</div>
-        <div class="val green" id="resAcc">0%</div>
-      </div>
-      <div class="stat-card">
-        <div class="lbl">Попадания / Промахи</div>
-        <div class="val cyan" id="resHits">0 / 0</div>
-      </div>
-      <div class="stat-card">
-        <div class="lbl">Средняя реакция</div>
-        <div class="val" id="resAvgReact">0 мс</div>
-      </div>
-      <div class="stat-card">
-        <div class="lbl">Лучшая реакция</div>
-        <div class="val cyan" id="resBestReact">0 мс</div>
-      </div>
-      <div class="stat-card">
-        <div class="lbl">Макс. серия / Хедшоты</div>
-        <div class="val pink" id="resStreak">0 / 0</div>
-      </div>
+      <div class="stat-card"><div class="lbl">Итоговый счёт</div><div class="val gold" id="resScore">0</div></div>
+      <div class="stat-card"><div class="lbl">Точность</div><div class="val green" id="resAcc">0%</div></div>
+      <div class="stat-card"><div class="lbl">Попадания / Промахи</div><div class="val accent" id="resHits">0 / 0</div></div>
+      <div class="stat-card"><div class="lbl">Средняя реакция</div><div class="val" id="resAvgReact">—</div></div>
+      <div class="stat-card"><div class="lbl">Лучшая реакция</div><div class="val accent" id="resBestReact">—</div></div>
+      <div class="stat-card"><div class="lbl">Макс. серия / Хедшоты</div><div class="val pink" id="resStreak">0 / 0</div></div>
     </div>
-
+    <div class="note" id="resNote" style="margin-bottom:18px"></div>
     <div class="actions-row">
       <button class="start-btn" id="retryBtn">Повторить раунд</button>
       <button class="secondary-btn" id="backMenuBtn">В главное меню</button>
@@ -524,1055 +266,1055 @@
 
 <script>
 (() => {
-  const canvas = document.getElementById('gameCanvas');
-  const ctx = canvas.getContext('2d');
+  "use strict";
 
-  // Элементы интерфейса
-  const menuOverlay = document.getElementById('menuOverlay');
-  const resultOverlay = document.getElementById('resultOverlay');
-  const hudTime = document.getElementById('hudTime');
-  const hudScore = document.getElementById('hudScore');
-  const hudAcc = document.getElementById('hudAcc');
-  const hudReact = document.getElementById('hudReact');
-  const hudStreak = document.getElementById('hudStreak');
+  const $ = id => document.getElementById(id);
+  const canvas = $("gameCanvas");
+  const ctx = canvas.getContext("2d");
+  const overlays = [$("menuOverlay"), $("pauseOverlay"), $("resultOverlay")];
 
-  // Настройки
   const config = {
-    mode: 'gridshot',
-    duration: 60,
-    sizeMult: 1.0,
-    sens: 1.0,
-    crosshairColor: '#00f0ff',
-    fov: 75
+    mode: "gridshot", duration: 60, sizeMult: 1,
+    sens: 1, crosshairColor: "#00f0ff", fov: 75
   };
 
   const MODE_TITLES = {
-    gridshot: 'GRIDSHOT 3D',
-    tracking: 'TRACKING 3D',
-    flick: 'FLICK & REFLEX',
-    strafe: 'STRAFE BOTS'
+    gridshot: "GRIDSHOT 3D",
+    tracking: "TRACKING 3D",
+    flick: "FLICK & REFLEX",
+    strafe: "STRAFE BOTS"
   };
 
-  // Рекорды в localStorage
-  const records = {
-    gridshot: Number(localStorage.getItem('aim3d_best_gridshot') || 0),
-    tracking: Number(localStorage.getItem('aim3d_best_tracking') || 0),
-    flick: Number(localStorage.getItem('aim3d_best_flick') || 0),
-    strafe: Number(localStorage.getItem('aim3d_best_strafe') || 0)
-  };
+  function readStorage(key) {
+    try { return localStorage.getItem(key); }
+    catch (_) { return null; }
+  }
+
+  function writeStorage(key, value) {
+    try { localStorage.setItem(key, value); }
+    catch (_) {}
+  }
+
+  const records = {};
+  for (const mode of Object.keys(MODE_TITLES)) {
+    const n = Number(readStorage("aim3d_best_" + mode));
+    records[mode] = Number.isFinite(n) && n > 0 ? n : 0;
+  }
 
   function updateRecordLabels() {
-    for (const k of Object.keys(records)) {
-      const el = document.getElementById('best-' + k);
-      if (el) el.textContent = `Рекорд: ${records[k]}`;
+    for (const mode of Object.keys(records)) {
+      $("best-" + mode).textContent = "Рекорд: " + records[mode];
     }
   }
   updateRecordLabels();
 
-  // Состояние 3D-камеры (в радианах)
-  const camera = {
-    x: 0,
-    y: 0,
-    z: 0,
-    yaw: 0,    // поворот влево-вправо
-    pitch: 0   // наклон вверх-вниз
-  };
+  const camera = { x: 0, y: 0, z: 0, yaw: 0, pitch: 0 };
+  const ROOM = { minX: -14, maxX: 14, minY: -6, maxY: 6, minZ: -10, maxZ: 28 };
 
-  // Размеры 3D-зала (стрелкового полигона)
-  const ROOM = {
-    minX: -14, maxX: 14,
-    minY: -6,  maxY: 6,
-    minZ: 2,   maxZ: 28
-  };
-
-  // Игровое состояние
-  let state = 'menu'; // 'menu' | 'playing' | 'results'
-  let timeLeft = 60;
-  let score = 0;
-  let shots = 0;
-  let hits = 0;
-  let headshots = 0;
-  let streak = 0;
-  let maxStreak = 0;
+  let W = innerWidth, H = innerHeight, focal = 1;
+  let state = "menu";
+  let timeLeft = 60, elapsed = 0;
+  let score = 0, shots = 0, hits = 0, headshots = 0;
+  let streak = 0, maxStreak = 0, expiredTargets = 0;
   let reactionTimes = [];
   let isMouseDown = false;
-  let weaponRecoil = 0;
-  let muzzleFlash = 0;
-  let hitMarkerTimer = 0;
+  let weaponRecoil = 0, muzzleFlash = 0, hitMarkerTimer = 0;
   let hitMarkerHeadshot = false;
-  let trackTickAccum = 0;
-  let flickNeedCenter = false;
+  let trackTickAccum = 0, flickNeedCenter = true;
+  let targets = [], particles3D = [], floatingTexts = [], laserBeams = [];
+  let pendingAction = null;
+  let lockRequestId = 0;
+  let hudAccum = 0;
 
-  // Массивы 3D-объектов
-  let targets = [];
-  let particles3D = [];
-  let floatingTexts = [];
-  let laserBeams = [];
+  const rand = (min,max) => min + Math.random() * (max-min);
+  const clamp = (v,min,max) => Math.max(min,Math.min(max,v));
 
-  // Звуковой движок (Web Audio API)
-  let audioCtx = null;
-  function ensureAudio() {
-    if (!audioCtx) {
-      const AudioContextClass = window.AudioContext || window.webkitAudioContext;
-      if (AudioContextClass) audioCtx = new AudioContextClass();
-    }
-    if (audioCtx && audioCtx.state === 'suspended') {
-      audioCtx.resume();
-    }
-  }
-
-  function playSound(type) {
-    if (!audioCtx) return;
-    const now = audioCtx.currentTime;
-
-    if (type === 'shoot') {
-      const osc = audioCtx.createOscillator();
-      const gain = audioCtx.createGain();
-      osc.type = 'sawtooth';
-      osc.frequency.setValueAtTime(190, now);
-      osc.frequency.exponentialRampToValueAtTime(45, now + 0.09);
-      gain.gain.setValueAtTime(0.18, now);
-      gain.gain.exponentialRampToValueAtTime(0.001, now + 0.09);
-      osc.connect(gain);
-      gain.connect(audioCtx.destination);
-      osc.start(now);
-      osc.stop(now + 0.09);
-    } else if (type === 'hit') {
-      const osc = audioCtx.createOscillator();
-      const gain = audioCtx.createGain();
-      osc.type = 'sine';
-      osc.frequency.setValueAtTime(680, now);
-      osc.frequency.exponentialRampToValueAtTime(1120, now + 0.07);
-      gain.gain.setValueAtTime(0.22, now);
-      gain.gain.exponentialRampToValueAtTime(0.001, now + 0.08);
-      osc.connect(gain);
-      gain.connect(audioCtx.destination);
-      osc.start(now);
-      osc.stop(now + 0.08);
-    } else if (type === 'headshot') {
-      const osc = audioCtx.createOscillator();
-      const gain = audioCtx.createGain();
-      osc.type = 'triangle';
-      osc.frequency.setValueAtTime(980, now);
-      osc.frequency.exponentialRampToValueAtTime(1680, now + 0.12);
-      gain.gain.setValueAtTime(0.28, now);
-      gain.gain.exponentialRampToValueAtTime(0.001, now + 0.13);
-      osc.connect(gain);
-      gain.connect(audioCtx.destination);
-      osc.start(now);
-      osc.stop(now + 0.13);
-    } else if (type === 'track') {
-      const osc = audioCtx.createOscillator();
-      const gain = audioCtx.createGain();
-      osc.type = 'sine';
-      osc.frequency.setValueAtTime(840, now);
-      gain.gain.setValueAtTime(0.1, now);
-      gain.gain.exponentialRampToValueAtTime(0.001, now + 0.04);
-      osc.connect(gain);
-      gain.connect(audioCtx.destination);
-      osc.start(now);
-      osc.stop(now + 0.04);
-    }
-  }
-
-  // Адаптация размера экрана
   function resize() {
-    canvas.width = window.innerWidth;
-    canvas.height = window.innerHeight;
+    W = innerWidth;
+    H = innerHeight;
+    const dpr = Math.min(devicePixelRatio || 1, 2);
+    canvas.width = Math.round(W * dpr);
+    canvas.height = Math.round(H * dpr);
+    ctx.setTransform(dpr,0,0,dpr,0,0);
+    focal = (H * .5) / Math.tan(config.fov * Math.PI / 360);
   }
-  window.addEventListener('resize', resize);
+  addEventListener("resize", resize);
   resize();
 
-  // Вектор направления взгляда камеры по углам yaw и pitch
+  function showOverlay(id) {
+    for (const overlay of overlays) {
+      overlay.classList.toggle("hidden", overlay.id !== id);
+    }
+  }
+
+  // Одна система координат для камеры, проекции и выстрелов.
+  // X — вправо, Y — вверх, Z — вперёд.
   function getCameraForward() {
-    const cosP = Math.cos(camera.pitch);
+    const cp = Math.cos(camera.pitch);
     return {
-      x: Math.sin(camera.yaw) * cosP,
+      x: Math.sin(camera.yaw) * cp,
       y: Math.sin(camera.pitch),
-      z: Math.cos(camera.yaw) * cosP
+      z: Math.cos(camera.yaw) * cp
     };
   }
 
-  // Перевод мировой 3D-точки в координаты камеры и проекция на 2D-экран
   function worldToCamera(wx, wy, wz) {
-    const dx = wx - camera.x;
-    const dy = wy - camera.y;
-    const dz = wz - camera.z;
+    const dx = wx-camera.x;
+    const dy = wy-camera.y;
+    const dz = wz-camera.z;
 
-    // Поворот вокруг оси Y (-yaw)
-    const cosY = Math.cos(-camera.yaw);
-    const sinY = Math.sin(-camera.yaw);
-    const x1 = dx * cosY - dz * sinY;
-    const z1 = dx * sinY + dz * cosY;
+    const cy = Math.cos(camera.yaw);
+    const sy = Math.sin(camera.yaw);
 
-    // Поворот вокруг оси X (-pitch)
-    const cosP = Math.cos(-camera.pitch);
-    const sinP = Math.sin(-camera.pitch);
-    const y2 = dy * cosP - z1 * sinP;
-    const z2 = dy * sinP + z1 * cosP;
+    // Исправлено: обратный поворот мира относительно камеры.
+    const x1 = dx*cy-dz*sy;
+    const z1 = dx*sy+dz*cy;
 
-    return { x: x1, y: y2, z: z2 };
+    const cp = Math.cos(camera.pitch);
+    const sp = Math.sin(camera.pitch);
+
+    return {
+      x: x1,
+      y: dy*cp-z1*sp,
+      z: dy*sp+z1*cp
+    };
   }
 
-  function projectCamPoint(cp) {
-    const fovRad = (config.fov * Math.PI) / 180;
-    const focal = (canvas.height * 0.5) / Math.tan(fovRad * 0.5);
-    const sx = canvas.width * 0.5 + (cp.x / cp.z) * focal;
-    const sy = canvas.height * 0.5 - (cp.y / cp.z) * focal;
-    return { sx, sy, z: cp.z, focal };
+  function project(cp) {
+    return {
+      x: W*.5 + cp.x/cp.z*focal,
+      y: H*.5 - cp.y/cp.z*focal
+    };
   }
 
-  // Отрисовка 3D-отрезка с отсечением по ближней плоскости камеры (z > 0.25)
-  function drawLine3D(p1, p2, strokeStyle, lineWidth = 1) {
-    const c1 = worldToCamera(p1.x, p1.y, p1.z);
-    const c2 = worldToCamera(p2.x, p2.y, p2.z);
-    const near = 0.25;
-
-    if (c1.z < near && c2.z < near) return;
-
-    let a = { ...c1 };
-    let b = { ...c2 };
+  function drawLine3D(p1,p2,color,width=1) {
+    const a = worldToCamera(p1.x,p1.y,p1.z);
+    const b = worldToCamera(p2.x,p2.y,p2.z);
+    const near = .25;
+    if (a.z < near && b.z < near) return;
 
     if (a.z < near) {
-      const t = (near - a.z) / (b.z - a.z);
-      a.x += (b.x - a.x) * t;
-      a.y += (b.y - a.y) * t;
+      const t = (near-a.z)/(b.z-a.z);
+      a.x += (b.x-a.x)*t;
+      a.y += (b.y-a.y)*t;
       a.z = near;
     } else if (b.z < near) {
-      const t = (near - b.z) / (a.z - b.z);
-      b.x += (a.x - b.x) * t;
-      b.y += (a.y - b.y) * t;
+      const t = (near-b.z)/(a.z-b.z);
+      b.x += (a.x-b.x)*t;
+      b.y += (a.y-b.y)*t;
       b.z = near;
     }
 
-    const s1 = projectCamPoint(a);
-    const s2 = projectCamPoint(b);
-
-    ctx.strokeStyle = strokeStyle;
-    ctx.lineWidth = lineWidth;
+    const s1 = project(a), s2 = project(b);
+    ctx.strokeStyle = color;
+    ctx.lineWidth = width;
     ctx.beginPath();
-    ctx.moveTo(s1.sx, s1.sy);
-    ctx.lineTo(s2.sx, s2.sy);
+    ctx.moveTo(s1.x,s1.y);
+    ctx.lineTo(s2.x,s2.y);
     ctx.stroke();
   }
 
-  // Генерация мишеней для выбранного режима
-  function randRange(min, max) {
-    return min + Math.random() * (max - min);
+  // Точное пересечение центрального луча камеры со сферой.
+  function raySphereIntersect(dir,center,radius) {
+    const x = camera.x-center.x;
+    const y = camera.y-center.y;
+    const z = camera.z-center.z;
+    const b = x*dir.x+y*dir.y+z*dir.z;
+    const c = x*x+y*y+z*z-radius*radius;
+    const d = b*b-c;
+    if (d < 0) return null;
+    const root = Math.sqrt(d);
+    const near = -b-root;
+    const far = -b+root;
+    return near > 0 ? near : far > 0 ? far : null;
+  }
+
+  let audioCtx = null;
+
+  function ensureAudio() {
+    try {
+      if (!audioCtx) {
+        const AC = window.AudioContext || window.webkitAudioContext;
+        if (AC) audioCtx = new AC();
+      }
+      if (audioCtx && audioCtx.state === "suspended") audioCtx.resume().catch(() => {});
+    } catch (_) {}
+  }
+
+  function playSound(type) {
+    if (!audioCtx || audioCtx.state !== "running") return;
+    const settings = {
+      shoot: ["sawtooth",190,45,.09,.10],
+      hit: ["sine",680,1120,.08,.15],
+      headshot: ["triangle",980,1680,.13,.19],
+      track: ["sine",840,920,.04,.055]
+    };
+    const [wave,from,to,duration,volume] = settings[type];
+    const now = audioCtx.currentTime;
+    const osc = audioCtx.createOscillator();
+    const gain = audioCtx.createGain();
+    osc.type = wave;
+    osc.frequency.setValueAtTime(from,now);
+    osc.frequency.exponentialRampToValueAtTime(to,now+duration);
+    gain.gain.setValueAtTime(volume,now);
+    gain.gain.exponentialRampToValueAtTime(.001,now+duration);
+    osc.connect(gain);
+    gain.connect(audioCtx.destination);
+    osc.start(now);
+    osc.stop(now+duration);
+    osc.onended = () => { osc.disconnect(); gain.disconnect(); };
   }
 
   function spawnTarget() {
-    const now = performance.now();
-    const baseR = 0.88 * config.sizeMult;
+    const r = .88*config.sizeMult;
+    const common = { spawnTime: elapsed, age: 0, scale: .2 };
 
-    if (config.mode === 'gridshot') {
-      // 3 сферы на плоскости Z = 17..20, без наложения друг на друга
-      for (let attempt = 0; attempt < 40; attempt++) {
-        const x = randRange(-6.2, 6.2);
-        const y = randRange(-3.2, 3.2);
-        const z = randRange(16.5, 20.5);
-        const tooClose = targets.some(t => Math.hypot(t.x - x, t.y - y) < baseR * 2.5);
-        if (!tooClose) {
-          targets.push({
-            type: 'sphere',
-            x, y, z,
-            r: baseR,
-            color: '#00f0ff',
-            spawnTime: now,
-            scale: 0.1
-          });
-          break;
+    if (config.mode === "gridshot") {
+      let pos = null;
+      let bestDistance = -1;
+
+      for (let i=0;i<80;i++) {
+        const candidate = {
+          x: rand(-6.2,6.2),
+          y: rand(-3.2,3.2),
+          z: rand(16.5,20.5)
+        };
+        const distance = targets.length
+          ? Math.min(...targets.map(t =>
+            Math.hypot(t.x/t.z-candidate.x/candidate.z,
+                       t.y/t.z-candidate.y/candidate.z)))
+          : Infinity;
+
+        if (distance > bestDistance) {
+          bestDistance = distance;
+          pos = candidate;
         }
+        if (distance > r*2.6/18) break;
       }
-    } else if (config.mode === 'tracking') {
+
+      targets.push({ ...common, ...pos, type:"sphere", r, color:"#00f0ff" });
+    } else if (config.mode === "tracking") {
       targets.push({
-        type: 'tracking',
-        x: 0,
-        y: 0.4,
-        z: 18,
-        vx: 4.6,
-        vy: 2.3,
-        vz: 2.0,
-        r: baseR * 1.18,
-        color: '#05d5aa',
-        spawnTime: now,
-        scale: 1,
-        changeTimer: 1.2,
-        isLockedOn: false
+        ...common, type:"tracking", x:0, y:.4, z:18,
+        r:r*1.18, color:"#05d5aa", scale:1,
+        vx:4.2, vy:1.8, vz:1,
+        goalVX:4.2, goalVY:1.8, goalVZ:1,
+        changeTimer:1.2, isLockedOn:false
       });
-    } else if (config.mode === 'flick') {
+    } else if (config.mode === "flick") {
       if (flickNeedCenter) {
         targets.push({
-          type: 'center_anchor',
-          x: 0,
-          y: 0,
-          z: 18,
-          r: baseR * 0.78,
-          color: '#ffcc00',
-          spawnTime: now,
-          scale: 0.2
+          ...common, type:"center_anchor", x:0,y:0,z:18,
+          r:r*.78, color:"#ffcc00"
         });
       } else {
-        const angle = randRange(0, Math.PI * 2);
-        const dist = randRange(3.2, 7.8);
-        const x = Math.cos(angle) * dist;
-        const y = Math.sin(angle) * Math.min(dist * 0.55, 3.8);
-        const z = randRange(15.5, 21.5);
+        const angle = rand(0,Math.PI*2);
+        const distance = rand(3.2,7.8);
         targets.push({
-          type: 'flick_target',
-          x, y, z,
-          r: baseR * 0.92,
-          color: '#ff2a6d',
-          spawnTime: now,
-          lifeTime: 1.65,
-          scale: 0.15
+          ...common, type:"flick_target",
+          x:Math.cos(angle)*distance,
+          y:Math.sin(angle)*Math.min(distance*.55,3.8),
+          z:rand(15.5,21.5), r:r*.92,
+          color:"#ff2a6d", lifeTime:1.65
         });
       }
-    } else if (config.mode === 'strafe') {
-      const z = randRange(14.5, 24.0);
-      const x = randRange(-8.5, 8.5);
-      const y = -1.3;
-      const dir = Math.random() > 0.5 ? 1 : -1;
+    } else {
       targets.push({
-        type: 'bot',
-        x, y, z,
-        vx: dir * randRange(3.2, 5.6),
-        r: baseR * 0.82, // радиус торса
-        headR: baseR * 0.46,
-        color: '#ff2a6d',
-        spawnTime: now,
-        scale: 0.15,
-        strafeTimer: randRange(0.7, 1.8)
+        ...common, type:"bot", x:rand(-8.5,8.5), y:-1.3,
+        z:rand(14.5,24), r:r*.82, headR:r*.46,
+        vx:(Math.random()<.5?-1:1)*rand(3.2,5.6),
+        color:"#ff2a6d", strafeTimer:rand(.7,1.8)
       });
     }
   }
 
-  function initTargetsForMode() {
+  function initTargets() {
     targets = [];
     particles3D = [];
     floatingTexts = [];
     laserBeams = [];
     flickNeedCenter = true;
-
-    if (config.mode === 'gridshot') {
-      for (let i = 0; i < 3; i++) spawnTarget();
-    } else if (config.mode === 'tracking') {
-      spawnTarget();
-    } else if (config.mode === 'flick') {
-      spawnTarget();
-    } else if (config.mode === 'strafe') {
-      for (let i = 0; i < 3; i++) spawnTarget();
-    }
+    const count = config.mode==="gridshot" || config.mode==="strafe" ? 3 : 1;
+    for (let i=0;i<count;i++) spawnTarget();
   }
 
-  // Проверка пересечения луча из камеры со сферой в 3D
-  function raySphereIntersect(rayDir, sphereCenter, radius) {
-    const ocX = camera.x - sphereCenter.x;
-    const ocY = camera.y - sphereCenter.y;
-    const ocZ = camera.z - sphereCenter.z;
-
-    const b = ocX * rayDir.x + ocY * rayDir.y + ocZ * rayDir.z;
-    const c = ocX * ocX + ocY * ocY + ocZ * ocZ - radius * radius;
-    const disc = b * b - c;
-
-    if (disc < 0) return null;
-    const t = -b - Math.sqrt(disc);
-    return t > 0 ? t : null;
-  }
-
-  // Создание 3D-частиц при попадании
-  function spawnExplosion3D(x, y, z, color, count = 16) {
-    for (let i = 0; i < count; i++) {
-      const theta = Math.random() * Math.PI * 2;
-      const phi = Math.random() * Math.PI - Math.PI / 2;
-      const speed = randRange(2.5, 9.5);
+  function spawnExplosion(x,y,z,color,count=16) {
+    for (let i=0;i<count;i++) {
+      const theta = rand(0,Math.PI*2);
+      const phi = rand(-Math.PI/2,Math.PI/2);
+      const speed = rand(2.5,9.5);
       particles3D.push({
-        x, y, z,
-        vx: Math.cos(theta) * Math.cos(phi) * speed,
-        vy: Math.sin(phi) * speed + 1.5,
-        vz: Math.sin(theta) * Math.cos(phi) * speed,
-        life: 1.0,
-        decay: randRange(1.8, 3.0),
-        size: randRange(0.08, 0.22),
-        color
+        x,y,z,color,
+        vx:Math.cos(theta)*Math.cos(phi)*speed,
+        vy:Math.sin(phi)*speed+1.5,
+        vz:Math.sin(theta)*Math.cos(phi)*speed,
+        life:1, decay:rand(1.8,3), size:rand(.06,.16)
       });
     }
+    if (particles3D.length>500) particles3D.splice(0,particles3D.length-500);
   }
 
-  function addFloatingText(x, y, z, text, color) {
-    floatingTexts.push({
-      x, y, z,
-      vy: 1.8,
-      text,
-      color,
-      life: 1.0
-    });
+  function addText(x,y,z,text,color) {
+    floatingTexts.push({ x,y,z,text,color,life:1 });
   }
 
-  // Обработка выстрела (для режимов клика)
+  function registerHit() {
+    hits++;
+    streak++;
+    maxStreak = Math.max(maxStreak,streak);
+  }
+
   function fireShot() {
-    if (state !== 'playing') return;
-    if (config.mode === 'tracking') return; // В трекинге удержание обрабатывается в update
+    if (state!=="playing" || document.pointerLockElement!==canvas) return;
+    if (config.mode==="tracking") return;
 
-    ensureAudio();
-    playSound('shoot');
+    playSound("shoot");
     shots++;
-    weaponRecoil = 1.0;
-    muzzleFlash = 1.0;
+    weaponRecoil = 1;
+    muzzleFlash = 1;
 
     const dir = getCameraForward();
-
-    // Добавляем лазерный след от оружия в точку выстрела
-    const gunWorld = {
-      x: camera.x + Math.cos(camera.yaw) * 0.45 + dir.x * 1.1,
-      y: camera.y - 0.35 + dir.y * 1.1,
-      z: camera.z - Math.sin(camera.yaw) * 0.45 + dir.z * 1.1
-    };
-
     let bestHit = null;
     let minDistance = Infinity;
 
-    for (let i = 0; i < targets.length; i++) {
+    for (let i=0;i<targets.length;i++) {
       const t = targets[i];
 
-      if (t.type === 'bot') {
-        const headCenter = { x: t.x, y: t.y + t.r * 1.65, z: t.z };
-        const bodyCenter = { x: t.x, y: t.y + t.r * 0.35, z: t.z };
+      // Хитбокс использует тот же масштаб, что и видимая сфера.
+      const parts = t.type==="bot" ? [
+        { center:{x:t.x,y:t.y+t.r*.35,z:t.z}, r:t.r*t.scale, head:false },
+        { center:{x:t.x,y:t.y+t.r*1.65,z:t.z}, r:t.headR*t.scale, head:true }
+      ] : [
+        { center:t, r:t.r*t.scale, head:false }
+      ];
 
-        const dHead = raySphereIntersect(dir, headCenter, t.headR);
-        if (dHead !== null && dHead < minDistance) {
-          minDistance = dHead;
-          bestHit = { index: i, isHead: true, point: headCenter, dist: dHead };
-        }
-
-        const dBody = raySphereIntersect(dir, bodyCenter, t.r);
-        if (dBody !== null && dBody < minDistance) {
-          minDistance = dBody;
-          bestHit = { index: i, isHead: false, point: bodyCenter, dist: dBody };
-        }
-      } else {
-        const d = raySphereIntersect(dir, t, t.r);
-        if (d !== null && d < minDistance) {
-          minDistance = d;
-          bestHit = { index: i, isHead: false, point: { x: t.x, y: t.y, z: t.z }, dist: d };
+      for (const part of parts) {
+        const distance = raySphereIntersect(dir,part.center,part.r);
+        if (distance!==null && distance<minDistance) {
+          minDistance = distance;
+          bestHit = { index:i, isHead:part.head, center:part.center };
         }
       }
     }
 
-    const beamDist = bestHit ? bestHit.dist : 28;
+    const distance = bestHit ? minDistance : 40;
+    const impact = {
+      x:camera.x+dir.x*distance,
+      y:camera.y+dir.y*distance,
+      z:camera.z+dir.z*distance
+    };
+
+    // Луч идёт от дула к точке попадания центрального луча камеры.
+    const cy = Math.cos(camera.yaw), sy = Math.sin(camera.yaw);
+    const cp = Math.cos(camera.pitch), sp = Math.sin(camera.pitch);
+    const right = {x:cy,y:0,z:-sy};
+    const up = {x:-sy*sp,y:cp,z:-cy*sp};
+
     laserBeams.push({
-      p1: gunWorld,
-      p2: {
-        x: camera.x + dir.x * beamDist,
-        y: camera.y + dir.y * beamDist,
-        z: camera.z + dir.z * beamDist
+      p1:{
+        x:camera.x+right.x*.45-up.x*.35+dir.x*1.1,
+        y:camera.y+right.y*.45-up.y*.35+dir.y*1.1,
+        z:camera.z+right.z*.45-up.z*.35+dir.z*1.1
       },
-      life: 1.0,
-      color: bestHit ? '#00f0ff' : 'rgba(255, 80, 110, 0.5)'
+      p2:impact, life:1,
+      color:bestHit?"#00f0ff":"#ff506e"
     });
 
     if (bestHit) {
-      const target = targets[bestHit.index];
-      const now = performance.now();
-      const reactMs = Math.round(now - target.spawnTime);
-
-      hits++;
-      streak++;
-      if (streak > maxStreak) maxStreak = streak;
-
-      hitMarkerTimer = 1.0;
+      const t = targets[bestHit.index];
+      const reaction = Math.round((elapsed-t.spawnTime)*1000);
+      registerHit();
+      hitMarkerTimer = 1;
       hitMarkerHeadshot = bestHit.isHead;
 
-      if (target.type !== 'center_anchor') {
-        reactionTimes.push(reactMs);
-      }
+      if (t.type!=="center_anchor") reactionTimes.push(reaction);
 
+      let points;
       if (bestHit.isHead) {
         headshots++;
-        const pts = 220 + Math.min(streak * 5, 100);
-        score += pts;
-        playSound('headshot');
-        spawnExplosion3D(bestHit.point.x, bestHit.point.y, bestHit.point.z, '#ffcc00', 22);
-        addFloatingText(bestHit.point.x, bestHit.point.y + 0.6, bestHit.point.z, `HEADSHOT +${pts}`, '#ffcc00');
+        points = 2*(100+Math.min(streak*3,60));
+        playSound("headshot");
       } else {
-        const pts = target.type === 'center_anchor' ? 30 : (100 + Math.min(streak * 3, 60));
-        score += pts;
-        playSound('hit');
-        spawnExplosion3D(bestHit.point.x, bestHit.point.y, bestHit.point.z, target.color, 16);
-        const txt = target.type === 'center_anchor' ? 'СТАРТ' : `+${pts} (${reactMs}мс)`;
-        addFloatingText(bestHit.point.x, bestHit.point.y + 0.5, bestHit.point.z, txt, '#00f0ff');
+        points = t.type==="center_anchor" ? 30 : 100+Math.min(streak*3,60);
+        playSound("hit");
       }
+      score += points;
 
-      // Удаляем поражённую мишень и создаём новую
-      targets.splice(bestHit.index, 1);
+      const color = bestHit.isHead ? "#ffcc00" : t.color;
+      spawnExplosion(impact.x,impact.y,impact.z,color,bestHit.isHead?22:16);
+      addText(
+        bestHit.center.x,bestHit.center.y+.5,bestHit.center.z,
+        bestHit.isHead ? "HEADSHOT +"+points :
+        t.type==="center_anchor" ? "СТАРТ" : "+"+points+" · "+reaction+" мс",
+        color
+      );
 
-      if (config.mode === 'flick') {
-        flickNeedCenter = !flickNeedCenter;
-        spawnTarget();
-      } else {
-        spawnTarget();
-      }
+      targets.splice(bestHit.index,1);
+      if (config.mode==="flick") flickNeedCenter = !flickNeedCenter;
+      spawnTarget();
     } else {
-      // Промах
       streak = 0;
     }
-
     updateHUD();
   }
 
   function updateHUD() {
-    hudTime.textContent = Math.max(0, timeLeft).toFixed(1);
-    hudScore.textContent = score;
-    const acc = shots > 0 ? Math.round((hits / shots) * 100) : 100;
-    hudAcc.textContent = `${acc}%`;
-    hudStreak.textContent = streak;
-
-    if (reactionTimes.length > 0) {
-      const last = reactionTimes[reactionTimes.length - 1];
-      hudReact.textContent = `${last} мс`;
-    } else {
-      hudReact.textContent = '— мс';
-    }
+    $("hudTime").textContent = Math.max(0,timeLeft).toFixed(1);
+    $("hudScore").textContent = score;
+    $("hudAcc").textContent = shots ? Math.round(hits/shots*100)+"%" : "—";
+    $("hudStreak").textContent = streak;
+    $("hudReact").textContent = reactionTimes.length
+      ? reactionTimes[reactionTimes.length-1]+" мс" : "—";
   }
 
-  // Запуск и завершение сессии
-  function startSession() {
-    ensureAudio();
-    state = 'playing';
+  function resetSession() {
     timeLeft = config.duration;
-    score = 0;
-    shots = 0;
-    hits = 0;
-    headshots = 0;
-    streak = 0;
-    maxStreak = 0;
+    elapsed = 0;
+    score = shots = hits = headshots = streak = maxStreak = expiredTargets = 0;
     reactionTimes = [];
-    camera.yaw = 0;
-    camera.pitch = 0;
-
-    initTargetsForMode();
-    updateHUD();
-
-    menuOverlay.classList.add('hidden');
-    resultOverlay.classList.add('hidden');
-
-    if (canvas.requestPointerLock) {
-      canvas.requestPointerLock();
-    }
-  }
-
-  function finishSession() {
-    state = 'results';
     isMouseDown = false;
-    if (document.pointerLockElement === canvas) {
-      document.exitPointerLock();
-    }
-
-    const acc = shots > 0 ? Math.round((hits / shots) * 100) : 0;
-    const avgReact = reactionTimes.length > 0
-      ? Math.round(reactionTimes.reduce((a, b) => a + b, 0) / reactionTimes.length)
-      : 0;
-    const bestReact = reactionTimes.length > 0
-      ? Math.min(...reactionTimes)
-      : 0;
-
-    let isNewRecord = false;
-    if (score > records[config.mode]) {
-      records[config.mode] = score;
-      localStorage.setItem('aim3d_best_' + config.mode, String(score));
-      updateRecordLabels();
-      isNewRecord = true;
-    }
-
-    document.getElementById('resModeSub').textContent = `Режим: ${MODE_TITLES[config.mode]}`;
-    document.getElementById('resNewRecord').textContent = isNewRecord ? '★ НОВЫЙ РЕКОРД!' : '';
-    document.getElementById('resScore').textContent = score;
-    document.getElementById('resAcc').textContent = `${acc}%`;
-    document.getElementById('resHits').textContent = `${hits} / ${Math.max(0, shots - hits)}`;
-    document.getElementById('resAvgReact').textContent = avgReact ? `${avgReact} мс` : '—';
-    document.getElementById('resBestReact').textContent = bestReact ? `${bestReact} мс` : '—';
-    document.getElementById('resStreak').textContent = `${maxStreak} / ${headshots}`;
-
-    resultOverlay.classList.remove('hidden');
+    trackTickAccum = 0;
+    weaponRecoil = muzzleFlash = hitMarkerTimer = 0;
+    hitMarkerHeadshot = false;
+    camera.yaw = camera.pitch = 0;
+    initTargets();
+    updateHUD();
   }
 
-  // Главный цикл обновления физики и логики
-  let lastTime = performance.now();
+  function lockFailed(message) {
+    if (!pendingAction) return;
+    pendingAction = null;
+    $("errorText").textContent = message;
+    $("pauseError").textContent = message;
+  }
 
-  function update(dt) {
-    // Плавное возвращение оружия после отдачи
-    weaponRecoil = Math.max(0, weaponRecoil - dt * 6.5);
-    muzzleFlash = Math.max(0, muzzleFlash - dt * 14);
-    hitMarkerTimer = Math.max(0, hitMarkerTimer - dt * 4.5);
+  function activatePending() {
+    if (!pendingAction || document.pointerLockElement!==canvas) return;
+    const action = pendingAction;
+    pendingAction = null;
+    if (action==="start") resetSession();
+    state = "playing";
+    isMouseDown = false;
+    lastTime = performance.now();
+    showOverlay(null);
+  }
 
-    // Обновление частиц
-    for (let i = particles3D.length - 1; i >= 0; i--) {
-      const p = particles3D[i];
-      p.x += p.vx * dt;
-      p.y += p.vy * dt;
-      p.z += p.vz * dt;
-      p.vy -= 9.8 * dt;
-      p.life -= p.decay * dt;
-      if (p.life <= 0) particles3D.splice(i, 1);
-    }
+  function requestPlay(action) {
+    ensureAudio();
+    $("errorText").textContent = "";
+    $("pauseError").textContent = "";
 
-    // Обновление всплывающего текста
-    for (let i = floatingTexts.length - 1; i >= 0; i--) {
-      const ft = floatingTexts[i];
-      ft.y += ft.vy * dt;
-      ft.life -= dt * 1.35;
-      if (ft.life <= 0) floatingTexts.splice(i, 1);
-    }
-
-    // Лазерные следы
-    for (let i = laserBeams.length - 1; i >= 0; i--) {
-      laserBeams[i].life -= dt * 6.0;
-      if (laserBeams[i].life <= 0) laserBeams.splice(i, 1);
-    }
-
-    if (state !== 'playing') return;
-
-    // Таймер сессии
-    timeLeft -= dt;
-    if (timeLeft <= 0) {
-      timeLeft = 0;
-      updateHUD();
-      finishSession();
+    if (!canvas.requestPointerLock) {
+      lockFailed("");
+      $("errorText").textContent = "Этот браузер не поддерживает захват мыши. Откройте игру в настольном Chrome, Edge или Firefox.";
       return;
     }
 
-    // Обновление мишеней
-    for (let i = targets.length - 1; i >= 0; i--) {
-      const t = targets[i];
-      t.scale = Math.min(1, t.scale + dt * 7.5);
+    pendingAction = action;
+    const requestId = ++lockRequestId;
 
-      if (t.type === 'flick_target') {
+    if (document.pointerLockElement===canvas) {
+      activatePending();
+      return;
+    }
+
+    try {
+      const result = canvas.requestPointerLock();
+      if (result && typeof result.catch==="function") {
+        result.catch(() => {
+          if (requestId===lockRequestId) {
+            lockFailed("Не удалось захватить мышь. Нажмите кнопку ещё раз. Если игра встроена в сайт, откройте HTML отдельно.");
+          }
+        });
+      }
+    } catch (_) {
+      lockFailed("Захват мыши недоступен. Откройте HTML отдельно и повторите попытку.");
+    }
+  }
+
+  function pauseSession() {
+    if (state!=="playing") return;
+    state = "paused";
+    isMouseDown = false;
+    trackTickAccum = 0;
+    showOverlay("pauseOverlay");
+    if (document.pointerLockElement===canvas) document.exitPointerLock();
+  }
+
+  function goMenu() {
+    state = "menu";
+    pendingAction = null;
+    lockRequestId++;
+    isMouseDown = false;
+    showOverlay("menuOverlay");
+    if (document.pointerLockElement===canvas) document.exitPointerLock();
+  }
+
+  function finishSession() {
+    state = "results";
+    isMouseDown = false;
+    pendingAction = null;
+    if (document.pointerLockElement===canvas) document.exitPointerLock();
+
+    const acc = shots ? Math.round(hits/shots*100) : 0;
+    const avg = reactionTimes.length
+      ? Math.round(reactionTimes.reduce((a,b)=>a+b,0)/reactionTimes.length) : 0;
+    const best = reactionTimes.length ? reactionTimes.reduce((a,b)=>Math.min(a,b),Infinity) : 0;
+    const newRecord = score>records[config.mode];
+
+    if (newRecord) {
+      records[config.mode] = score;
+      writeStorage("aim3d_best_"+config.mode,String(score));
+      updateRecordLabels();
+    }
+
+    $("resModeSub").textContent = "Режим: "+MODE_TITLES[config.mode];
+    $("resNewRecord").textContent = newRecord ? "★ НОВЫЙ РЕКОРД!" : "";
+    $("resScore").textContent = score;
+    $("resAcc").textContent = acc+"%";
+    $("resHits").textContent = hits+" / "+(shots-hits);
+    $("resAvgReact").textContent = reactionTimes.length ? avg+" мс" : "—";
+    $("resBestReact").textContent = reactionTimes.length ? best+" мс" : "—";
+    $("resStreak").textContent = maxStreak+" / "+headshots;
+    $("resNote").textContent = config.mode==="tracking"
+      ? "В трекинге попадания и промахи — проверки удержания каждые 50 мс при зажатой ЛКМ. Реакция в этом режиме не измеряется."
+      : config.mode==="flick"
+        ? "Пропущено целей по таймеру: "+expiredTargets+". Реакция считается без времени паузы."
+        : "Реакция — время от появления цели до попадания, без учёта пауз.";
+
+    showOverlay("resultOverlay");
+  }
+
+  function update(dt) {
+    if (state!=="playing") return;
+
+    const step = Math.min(dt,timeLeft);
+    dt = step;
+    elapsed += dt;
+    timeLeft = Math.max(0,timeLeft-dt);
+
+    weaponRecoil = Math.max(0,weaponRecoil-dt*6.5);
+    muzzleFlash = Math.max(0,muzzleFlash-dt*14);
+    hitMarkerTimer = Math.max(0,hitMarkerTimer-dt*4.5);
+
+    for (let i=particles3D.length-1;i>=0;i--) {
+      const p = particles3D[i];
+      p.x += p.vx*dt;
+      p.y += p.vy*dt;
+      p.z += p.vz*dt;
+      p.vy -= 9.8*dt;
+      p.life -= p.decay*dt;
+      if (p.life<=0) particles3D.splice(i,1);
+    }
+
+    for (let i=floatingTexts.length-1;i>=0;i--) {
+      const t = floatingTexts[i];
+      t.y += 1.8*dt;
+      t.life -= 1.35*dt;
+      if (t.life<=0) floatingTexts.splice(i,1);
+    }
+
+    for (let i=laserBeams.length-1;i>=0;i--) {
+      laserBeams[i].life -= dt*6;
+      if (laserBeams[i].life<=0) laserBeams.splice(i,1);
+    }
+
+    for (let i=targets.length-1;i>=0;i--) {
+      const t = targets[i];
+      t.age += dt;
+      t.scale = Math.min(1,t.scale+dt*7.5);
+
+      if (t.type==="flick_target") {
         t.lifeTime -= dt;
-        if (t.lifeTime <= 0) {
-          // Цель исчезла по таймеру
+        if (t.lifeTime<=0) {
+          expiredTargets++;
           streak = 0;
-          targets.splice(i, 1);
+          targets.splice(i,1);
           flickNeedCenter = true;
           spawnTarget();
         }
-      } else if (t.type === 'bot') {
-        t.x += t.vx * dt;
+      } else if (t.type==="bot") {
+        t.x += t.vx*dt;
         t.strafeTimer -= dt;
-        if (t.x < -9.5 || t.x > 9.5 || t.strafeTimer <= 0) {
-          t.vx = -t.vx;
-          t.x = Math.max(-9.5, Math.min(9.5, t.x));
-          t.strafeTimer = randRange(0.6, 1.7);
+        if (t.x< -9.5 || t.x>9.5) {
+          t.x = clamp(t.x,-9.5,9.5);
+          t.vx = t.x>0 ? -Math.abs(t.vx) : Math.abs(t.vx);
+          t.strafeTimer = rand(.6,1.7);
+        } else if (t.strafeTimer<=0) {
+          t.vx *= -1;
+          t.strafeTimer = rand(.6,1.7);
         }
-      } else if (t.type === 'tracking') {
-        t.x += t.vx * dt;
-        t.y += t.vy * dt;
-        t.z += t.vz * dt;
+      } else if (t.type==="tracking") {
         t.changeTimer -= dt;
-
-        if (t.x < -7.5 || t.x > 7.5) t.vx *= -1;
-        if (t.y < -3.0 || t.y > 3.2) t.vy *= -1;
-        if (t.z < 13.5 || t.z > 23.0) t.vz *= -1;
-
-        if (t.changeTimer <= 0) {
-          t.vx = randRange(-5.5, 5.5);
-          t.vy = randRange(-3.2, 3.2);
-          t.vz = randRange(-3.0, 3.0);
-          t.changeTimer = randRange(0.7, 1.5);
+        if (t.changeTimer<=0) {
+          t.goalVX = rand(-5.5,5.5);
+          t.goalVY = rand(-3.2,3.2);
+          t.goalVZ = rand(-2.5,2.5);
+          t.changeTimer = rand(.7,1.5);
         }
 
-        // Проверка удержания прицела на мишени в режиме TRACKING 3D
-        const dir = getCameraForward();
-        const dist = raySphereIntersect(dir, t, t.r);
-        t.isLockedOn = isMouseDown && dist !== null;
+        const blend = 1-Math.exp(-3*dt);
+        t.vx += (t.goalVX-t.vx)*blend;
+        t.vy += (t.goalVY-t.vy)*blend;
+        t.vz += (t.goalVZ-t.vz)*blend;
+
+        t.x += t.vx*dt;
+        t.y += t.vy*dt;
+        t.z += t.vz*dt;
+
+        if (t.x< -7.5 || t.x>7.5) {
+          t.x = clamp(t.x,-7.5,7.5);
+          t.goalVX = t.vx = t.x>0 ? -Math.abs(t.vx)-.5 : Math.abs(t.vx)+.5;
+        }
+        if (t.y< -3 || t.y>3.2) {
+          t.y = clamp(t.y,-3,3.2);
+          t.goalVY = t.vy = t.y>0 ? -Math.abs(t.vy)-.3 : Math.abs(t.vy)+.3;
+        }
+        if (t.z<13.5 || t.z>23) {
+          t.z = clamp(t.z,13.5,23);
+          t.goalVZ = t.vz = t.z>18 ? -Math.abs(t.vz)-.3 : Math.abs(t.vz)+.3;
+        }
+
+        t.isLockedOn = isMouseDown &&
+          raySphereIntersect(getCameraForward(),t,t.r*t.scale)!==null;
 
         if (isMouseDown) {
           trackTickAccum += dt;
-          if (trackTickAccum >= 0.05) { // 20 проверок в секунду
-            trackTickAccum = 0;
+          while (trackTickAccum>=.05) {
+            trackTickAccum -= .05;
             shots++;
             if (t.isLockedOn) {
-              hits++;
-              streak++;
-              if (streak > maxStreak) maxStreak = streak;
+              registerHit();
               score += 15;
-              hitMarkerTimer = 0.4;
+              hitMarkerTimer = .4;
               hitMarkerHeadshot = false;
-              playSound('track');
-              spawnExplosion3D(t.x, t.y, t.z, '#05d5aa', 2);
+              playSound("track");
+              spawnExplosion(t.x,t.y,t.z,"#05d5aa",2);
             } else {
               streak = 0;
             }
           }
+        } else {
+          trackTickAccum = 0;
         }
       }
     }
 
-    updateHUD();
-  }
+    hudAccum += dt;
+    if (hudAccum>=.05) { hudAccum=0; updateHUD(); }
 
-  // Отрисовка 3D-полигона (сетка стен, пола, потолка, дистанционные рамки)
-  function drawArena3D() {
-    // 1. Фон неба/полигона
-    const bgGrad = ctx.createLinearGradient(0, 0, 0, canvas.height);
-    bgGrad.addColorStop(0, '#050811');
-    bgGrad.addColorStop(0.5, '#091122');
-    bgGrad.addColorStop(1, '#04070e');
-    ctx.fillStyle = bgGrad;
-    ctx.fillRect(0, 0, canvas.width, canvas.height);
-
-    // 2. Дальняя стена и промежуточные глубинные рамки
-    const depthFrames = [8, 14, 20, 28];
-    for (const z of depthFrames) {
-      const isBackWall = z === ROOM.maxZ;
-      const stroke = isBackWall ? 'rgba(0, 240, 255, 0.35)' : 'rgba(0, 240, 255, 0.11)';
-      const w = isBackWall ? 1.8 : 1;
-
-      const pTL = { x: ROOM.minX, y: ROOM.maxY, z };
-      const pTR = { x: ROOM.maxX, y: ROOM.maxY, z };
-      const pBR = { x: ROOM.maxX, y: ROOM.minY, z };
-      const pBL = { x: ROOM.minX, y: ROOM.minY, z };
-
-      drawLine3D(pTL, pTR, stroke, w);
-      drawLine3D(pTR, pBR, stroke, w);
-      drawLine3D(pBR, pBL, stroke, w);
-      drawLine3D(pBL, pTL, stroke, w);
-    }
-
-    // 3. Продольные линии пола и потолка
-    for (let x = ROOM.minX; x <= ROOM.maxX; x += 2) {
-      const isCenter = x === 0;
-      const clr = isCenter ? 'rgba(0, 240, 255, 0.28)' : 'rgba(0, 240, 255, 0.09)';
-      drawLine3D({ x, y: ROOM.minY, z: ROOM.minZ }, { x, y: ROOM.minY, z: ROOM.maxZ }, clr, 1);
-      drawLine3D({ x, y: ROOM.maxY, z: ROOM.minZ }, { x, y: ROOM.maxY, z: ROOM.maxZ }, 'rgba(0, 240, 255, 0.06)', 1);
-    }
-
-    // 4. Поперечные линии пола и дальней стены
-    for (let z = 4; z <= ROOM.maxZ; z += 3) {
-      drawLine3D({ x: ROOM.minX, y: ROOM.minY, z }, { x: ROOM.maxX, y: ROOM.minY, z }, 'rgba(0, 240, 255, 0.08)', 1);
-    }
-
-    // Сетка на дальней мишенной стене (Z = 28)
-    for (let x = ROOM.minX + 2; x < ROOM.maxX; x += 2) {
-      drawLine3D({ x, y: ROOM.minY, z: ROOM.maxZ }, { x, y: ROOM.maxY, z: ROOM.maxZ }, 'rgba(0, 240, 255, 0.07)', 1);
-    }
-    for (let y = ROOM.minY + 2; y < ROOM.maxY; y += 2) {
-      drawLine3D({ x: ROOM.minX, y, z: ROOM.maxZ }, { x: ROOM.maxX, y, z: ROOM.maxZ }, 'rgba(0, 240, 255, 0.07)', 1);
+    if (timeLeft<=0) {
+      updateHUD();
+      finishSession();
     }
   }
 
-  // Отрисовка объёмной 3D-сферы с бликом и тенью на полу
-  function drawSphere3D(x, y, z, radius, color, extraGlow = false) {
-    // Проекция тени на пол (y = ROOM.minY)
-    const shadowCam = worldToCamera(x, ROOM.minY, z);
-    if (shadowCam.z > 0.3) {
-      const shProj = projectCamPoint(shadowCam);
-      const shR = Math.max(2, (radius / shadowCam.z) * shProj.focal);
-      ctx.save();
-      ctx.fillStyle = 'rgba(0, 0, 0, 0.42)';
-      ctx.beginPath();
-      ctx.ellipse(shProj.sx, shProj.sy, shR * 1.1, shR * 0.38, 0, 0, Math.PI * 2);
-      ctx.fill();
-      ctx.restore();
+  function drawArena() {
+    const bg = ctx.createLinearGradient(0,0,0,H);
+    bg.addColorStop(0,"#050811");
+    bg.addColorStop(.5,"#091122");
+    bg.addColorStop(1,"#04070e");
+    ctx.fillStyle = bg;
+    ctx.fillRect(0,0,W,H);
+
+    for (const z of [-10,2,8,14,20,28]) {
+      const color = z===28 ? "rgba(0,240,255,.35)" : "rgba(0,240,255,.1)";
+      const points = [
+        {x:ROOM.minX,y:ROOM.maxY,z}, {x:ROOM.maxX,y:ROOM.maxY,z},
+        {x:ROOM.maxX,y:ROOM.minY,z}, {x:ROOM.minX,y:ROOM.minY,z}
+      ];
+      for (let i=0;i<4;i++) drawLine3D(points[i],points[(i+1)%4],color,z===28?1.8:1);
     }
 
-    const camPt = worldToCamera(x, y, z);
-    if (camPt.z <= 0.3) return;
+    for (let x=ROOM.minX;x<=ROOM.maxX;x+=2) {
+      drawLine3D({x,y:-6,z:-10},{x,y:-6,z:28},
+        x===0?"rgba(0,240,255,.28)":"rgba(0,240,255,.09)");
+      drawLine3D({x,y:6,z:-10},{x,y:6,z:28},"rgba(0,240,255,.055)");
+      drawLine3D({x,y:-6,z:28},{x,y:6,z:28},"rgba(0,240,255,.07)");
+      drawLine3D({x,y:-6,z:-10},{x,y:6,z:-10},"rgba(0,240,255,.05)");
+    }
 
-    const proj = projectCamPoint(camPt);
-    const screenR = Math.max(2, (radius / camPt.z) * proj.focal);
+    for (let z=-10;z<=28;z+=3) {
+      drawLine3D({x:-14,y:-6,z},{x:14,y:-6,z},"rgba(0,240,255,.08)");
+    }
+
+    for (let y=-4;y<6;y+=2) {
+      drawLine3D({x:-14,y,z:28},{x:14,y,z:28},"rgba(0,240,255,.07)");
+      drawLine3D({x:-14,y,z:-10},{x:-14,y,z:28},"rgba(0,240,255,.055)");
+      drawLine3D({x:14,y,z:-10},{x:14,y,z:28},"rgba(0,240,255,.055)");
+    }
+  }
+
+  // Силуэт сферы строится по касательному конусу.
+  // Это согласует её видимую границу с 3D ray/sphere хитбоксом
+  // даже при смещении далеко от центра экрана.
+  function drawSphere(x,y,z,r,color,glow=false,shadow=true) {
+    if (r<=0) return;
+    const c = worldToCamera(x,y,z);
+    if (c.z<=r+.25) return;
+
+    const distance = Math.hypot(c.x,c.y,c.z);
+    const nx = c.x/distance, ny = c.y/distance, nz = c.z/distance;
+    const horizontal = Math.hypot(nx,nz);
+    const ux = nz/horizontal, uy = 0, uz = -nx/horizontal;
+    const vx = ny*uz-nz*uy;
+    const vy = nz*ux-nx*uz;
+    const vz = nx*uy-ny*ux;
+
+    const offset = r*r/distance;
+    const center = {
+      x:c.x-nx*offset,
+      y:c.y-ny*offset,
+      z:c.z-nz*offset
+    };
+    const ringR = r*Math.sqrt(1-r*r/(distance*distance));
+
+    const points = [];
+    let minX=Infinity,maxX=-Infinity,minY=Infinity,maxY=-Infinity;
+
+    for (let i=0;i<64;i++) {
+      const a = i/64*Math.PI*2;
+      const ca = Math.cos(a)*ringR, sa = Math.sin(a)*ringR;
+      const p = project({
+        x:center.x+ux*ca+vx*sa,
+        y:center.y+uy*ca+vy*sa,
+        z:center.z+uz*ca+vz*sa
+      });
+      points.push(p);
+      minX=Math.min(minX,p.x); maxX=Math.max(maxX,p.x);
+      minY=Math.min(minY,p.y); maxY=Math.max(maxY,p.y);
+    }
+
+    if (maxX< -50 || minX>W+50 || maxY< -50 || minY>H+50) return;
+
+    if (shadow) {
+      const s = worldToCamera(x,ROOM.minY,z);
+      if (s.z>.3) {
+        const p = project(s);
+        const sr = r/s.z*focal;
+        ctx.fillStyle = "rgba(0,0,0,.28)";
+        ctx.beginPath();
+        ctx.ellipse(p.x,p.y,sr*1.1,sr*.3,0,0,Math.PI*2);
+        ctx.fill();
+      }
+    }
+
+    const sx = (minX+maxX)/2, sy = (minY+maxY)/2;
+    const screenR = Math.max((maxX-minX)/2,(maxY-minY)/2,.1);
 
     ctx.save();
-    if (extraGlow) {
-      ctx.shadowColor = color;
-      ctx.shadowBlur = 24;
-    }
+    if (glow) { ctx.shadowColor=color; ctx.shadowBlur=18; }
 
-    const grad = ctx.createRadialGradient(
-      proj.sx - screenR * 0.32,
-      proj.sy - screenR * 0.32,
-      screenR * 0.08,
-      proj.sx,
-      proj.sy,
-      screenR
+    const gradient = ctx.createRadialGradient(
+      sx-screenR*.32,sy-screenR*.32,screenR*.04,
+      sx,sy,screenR
     );
-    grad.addColorStop(0, '#ffffff');
-    grad.addColorStop(0.28, color);
-    grad.addColorStop(0.85, color);
-    grad.addColorStop(1, '#040914');
+    gradient.addColorStop(0,"#ffffff");
+    gradient.addColorStop(.27,color);
+    gradient.addColorStop(.78,color);
+    gradient.addColorStop(1,"#040914");
 
-    ctx.fillStyle = grad;
+    ctx.fillStyle = gradient;
     ctx.beginPath();
-    ctx.arc(proj.sx, proj.sy, screenR, 0, Math.PI * 2);
+    points.forEach((p,i) => i ? ctx.lineTo(p.x,p.y) : ctx.moveTo(p.x,p.y));
+    ctx.closePath();
     ctx.fill();
 
-    // Тонкий неоновый контур
-    ctx.strokeStyle = 'rgba(255,255,255,0.45)';
-    ctx.lineWidth = 1.2;
+    // Внешний декоративный контур не участвует в хитбоксе.
+    ctx.shadowBlur = 0;
+    ctx.strokeStyle = "rgba(255,255,255,.36)";
+    ctx.lineWidth = .8;
     ctx.stroke();
     ctx.restore();
   }
 
-  // Отрисовка 3D-оружия от первого лица в правом нижнем углу и прицела
   function drawWeaponAndCrosshair() {
-    const w = canvas.width;
-    const h = canvas.height;
-    const cx = w * 0.5;
-    const cy = h * 0.5;
+    const cx = W*.5, cy = H*.5;
 
-    // 1. Лазерные лучи выстрелов
-    for (const b of laserBeams) {
-      drawLine3D(b.p1, b.p2, b.color, 2.2 * b.life);
+    for (const beam of laserBeams) {
+      ctx.save();
+      ctx.globalAlpha = beam.life;
+      drawLine3D(beam.p1,beam.p2,beam.color,2);
+      ctx.restore();
     }
 
-    // 2. 3D-пушка в правом нижнем углу с отдачей
-    const recOffsetX = weaponRecoil * 18;
-    const recOffsetY = weaponRecoil * 26;
-    const gunBaseX = w - 240 + recOffsetX;
-    const gunBaseY = h - 30 + recOffsetY;
-    const barrelTipX = cx + 95 + recOffsetX * 0.3;
-    const barrelTipY = cy + 85 + recOffsetY * 0.3;
+    // Дуло и начало 3D-трассера используют одинаковую проекцию.
+    const rec = weaponRecoil;
+    const tipX = cx+focal*.45/1.1+rec*6;
+    const tipY = cy+focal*.35/1.1+rec*9;
+    const baseX = W*.78+rec*18;
 
     ctx.save();
-    // Вспышка выстрела
-    if (muzzleFlash > 0) {
-      const flashR = 34 * muzzleFlash;
-      const fGrad = ctx.createRadialGradient(barrelTipX, barrelTipY, 2, barrelTipX, barrelTipY, flashR);
-      fGrad.addColorStop(0, '#ffffff');
-      fGrad.addColorStop(0.4, '#00f0ff');
-      fGrad.addColorStop(1, 'rgba(0, 240, 255, 0)');
-      ctx.fillStyle = fGrad;
-      ctx.beginPath();
-      ctx.arc(barrelTipX, barrelTipY, flashR, 0, Math.PI * 2);
-      ctx.fill();
-    }
-
-    // Корпус винтовки
-    ctx.fillStyle = '#121a2a';
-    ctx.strokeStyle = '#00f0ff';
+    ctx.fillStyle = "#101a2b";
+    ctx.strokeStyle = "#1b7991";
     ctx.lineWidth = 2;
     ctx.beginPath();
-    ctx.moveTo(gunBaseX - 60, h + 20);
-    ctx.lineTo(barrelTipX - 18, barrelTipY + 12);
-    ctx.lineTo(barrelTipX + 14, barrelTipY - 10);
-    ctx.lineTo(gunBaseX + 95, h + 20);
+    ctx.moveTo(baseX-85,H+25);
+    ctx.lineTo(tipX-18,tipY+12);
+    ctx.lineTo(tipX+15,tipY-10);
+    ctx.lineTo(baseX+110,H+25);
     ctx.closePath();
     ctx.fill();
     ctx.stroke();
 
-    // Светящаяся энергетическая шина на стволе
+    ctx.fillStyle = "#1c2c43";
+    ctx.beginPath();
+    ctx.moveTo(baseX-22,H+25);
+    ctx.lineTo(tipX+1,tipY+7);
+    ctx.lineTo(tipX+15,tipY-10);
+    ctx.lineTo(baseX+110,H+25);
+    ctx.closePath();
+    ctx.fill();
+
     ctx.strokeStyle = config.crosshairColor;
+    ctx.shadowColor = config.crosshairColor;
+    ctx.shadowBlur = 9;
     ctx.lineWidth = 3;
     ctx.beginPath();
-    ctx.moveTo(gunBaseX - 10, gunBaseY - 25);
-    ctx.lineTo(barrelTipX, barrelTipY);
+    ctx.moveTo(baseX-15,H-45+rec*20);
+    ctx.lineTo(tipX,tipY+4);
     ctx.stroke();
+
+    if (muzzleFlash>0) {
+      const radius = 34*muzzleFlash;
+      const gradient = ctx.createRadialGradient(tipX,tipY,0,tipX,tipY,radius);
+      gradient.addColorStop(0,"#ffffff");
+      gradient.addColorStop(.35,"#00f0ff");
+      gradient.addColorStop(1,"rgba(0,240,255,0)");
+      ctx.fillStyle = gradient;
+      ctx.beginPath();
+      ctx.arc(tipX,tipY,radius,0,Math.PI*2);
+      ctx.fill();
+    }
     ctx.restore();
 
-    // 3. Хитмаркер при попадании
-    if (hitMarkerTimer > 0) {
+    if (hitMarkerTimer>0) {
       ctx.save();
-      ctx.strokeStyle = hitMarkerHeadshot ? '#ffcc00' : '#ffffff';
-      ctx.lineWidth = 2.2;
-      ctx.globalAlpha = Math.min(1, hitMarkerTimer);
-      const s1 = 6, s2 = 14;
+      ctx.globalAlpha = Math.min(1,hitMarkerTimer);
+      ctx.strokeStyle = hitMarkerHeadshot ? "#ffcc00" : "#ffffff";
+      ctx.lineWidth = 2;
       ctx.beginPath();
-      ctx.moveTo(cx - s2, cy - s2); ctx.lineTo(cx - s1, cy - s1);
-      ctx.moveTo(cx + s2, cy - s2); ctx.lineTo(cx + s1, cy - s1);
-      ctx.moveTo(cx - s2, cy + s2); ctx.lineTo(cx - s1, cy + s1);
-      ctx.moveTo(cx + s2, cy + s2); ctx.lineTo(cx + s1, cy + s1);
+      for (const [x,y] of [[-1,-1],[1,-1],[-1,1],[1,1]]) {
+        ctx.moveTo(cx+x*14,cy+y*14);
+        ctx.lineTo(cx+x*7,cy+y*7);
+      }
       ctx.stroke();
       ctx.restore();
     }
 
-    // 4. Прицел (Crosshair)
+    // Отдача оружия не сдвигает точку прицеливания.
     ctx.save();
-    ctx.strokeStyle = config.crosshairColor;
-    ctx.fillStyle = config.crosshairColor;
-    ctx.lineWidth = 2;
-    const gap = 5 + weaponRecoil * 5;
-    const len = 9;
+    ctx.strokeStyle = "rgba(0,0,0,.85)";
+    ctx.lineWidth = 4;
+    const gap = 5, len = 9;
 
-    ctx.beginPath();
-    ctx.moveTo(cx - gap - len, cy); ctx.lineTo(cx - gap, cy);
-    ctx.moveTo(cx + gap, cy);       ctx.lineTo(cx + gap + len, cy);
-    ctx.moveTo(cx, cy - gap - len); ctx.lineTo(cx, cy - gap);
-    ctx.moveTo(cx, cy + gap);       ctx.lineTo(cx, cy + gap + len);
+    function crossPath() {
+      ctx.beginPath();
+      ctx.moveTo(cx-gap-len,cy); ctx.lineTo(cx-gap,cy);
+      ctx.moveTo(cx+gap,cy); ctx.lineTo(cx+gap+len,cy);
+      ctx.moveTo(cx,cy-gap-len); ctx.lineTo(cx,cy-gap);
+      ctx.moveTo(cx,cy+gap); ctx.lineTo(cx,cy+gap+len);
+    }
+
+    crossPath();
     ctx.stroke();
-
+    ctx.strokeStyle = config.crosshairColor;
+    ctx.lineWidth = 2;
+    crossPath();
+    ctx.stroke();
+    ctx.fillStyle = config.crosshairColor;
     ctx.beginPath();
-    ctx.arc(cx, cy, 1.8, 0, Math.PI * 2);
+    ctx.arc(cx,cy,1.6,0,Math.PI*2);
     ctx.fill();
     ctx.restore();
   }
 
-  // Главная функция рендера
   function render() {
-    drawArena3D();
+    drawArena();
 
-    // Сортируем мишени по дальности от камеры (алгоритм художника: от дальних к ближним)
-    const sortedTargets = [...targets].map(t => {
-      const cp = worldToCamera(t.x, t.y, t.z);
-      return { t, depth: cp.z };
-    }).sort((a, b) => b.depth - a.depth);
-
-    for (const item of sortedTargets) {
-      const t = item.t;
-      if (t.type === 'bot') {
-        // Силуэт бота: корпус + голова
-        drawSphere3D(t.x, t.y + t.r * 0.35, t.z, t.r * t.scale, '#ff2a6d', false);
-        drawSphere3D(t.x, t.y + t.r * 1.65, t.z, t.headR * t.scale, '#ffcc00', true);
-      } else if (t.type === 'tracking') {
-        const clr = t.isLockedOn ? '#ffcc00' : '#05d5aa';
-        drawSphere3D(t.x, t.y, t.z, t.r * t.scale, clr, t.isLockedOn);
+    const objects = [];
+    for (const t of targets) {
+      if (t.type==="bot") {
+        objects.push({
+          x:t.x,y:t.y+t.r*.35,z:t.z,r:t.r*t.scale,
+          color:"#ff2a6d",glow:false,shadow:true
+        });
+        objects.push({
+          x:t.x,y:t.y+t.r*1.65,z:t.z,r:t.headR*t.scale,
+          color:"#ffcc00",glow:true,shadow:false
+        });
       } else {
-        drawSphere3D(t.x, t.y, t.z, t.r * t.scale, t.color, true);
+        objects.push({
+          x:t.x,y:t.y,z:t.z,r:t.r*t.scale,
+          color:t.type==="tracking" && t.isLockedOn ? "#ffcc00" : t.color,
+          glow:t.type!=="tracking" || t.isLockedOn,shadow:true
+        });
       }
     }
 
-    // 3D-частицы
-    for (const p of particles3D) {
-      const cp = worldToCamera(p.x, p.y, p.z);
-      if (cp.z <= 0.3) continue;
-      const proj = projectCamPoint(cp);
-      const r = Math.max(1.5, (p.size / cp.z) * proj.focal);
-      ctx.save();
-      ctx.globalAlpha = Math.max(0, p.life);
-      ctx.fillStyle = p.color;
-      ctx.beginPath();
-      ctx.arc(proj.sx, proj.sy, r, 0, Math.PI * 2);
-      ctx.fill();
-      ctx.restore();
+    objects.sort((a,b) =>
+      worldToCamera(b.x,b.y,b.z).z-worldToCamera(a.x,a.y,a.z).z
+    );
+
+    for (const o of objects) {
+      drawSphere(o.x,o.y,o.z,o.r,o.color,o.glow,o.shadow);
     }
 
-    // Всплывающие 3D-надписи (+100, HEADSHOT)
-    for (const ft of floatingTexts) {
-      const cp = worldToCamera(ft.x, ft.y, ft.z);
-      if (cp.z <= 0.3) continue;
-      const proj = projectCamPoint(cp);
-      ctx.save();
-      ctx.globalAlpha = Math.max(0, ft.life);
-      ctx.font = '800 15px "Segoe UI", sans-serif';
-      ctx.fillStyle = ft.color;
-      ctx.textAlign = 'center';
-      ctx.fillText(ft.text, proj.sx, proj.sy);
-      ctx.restore();
+    for (const p of particles3D) {
+      const c = worldToCamera(p.x,p.y,p.z);
+      if (c.z<=.3) continue;
+      const s = project(c);
+      const r = Math.max(1,p.size/c.z*focal);
+      ctx.globalAlpha = Math.max(0,p.life);
+      ctx.fillStyle = p.color;
+      ctx.beginPath();
+      ctx.arc(s.x,s.y,r,0,Math.PI*2);
+      ctx.fill();
     }
+    ctx.globalAlpha = 1;
+
+    for (const t of floatingTexts) {
+      const c = worldToCamera(t.x,t.y,t.z);
+      if (c.z<=.3) continue;
+      const s = project(c);
+      ctx.globalAlpha = Math.max(0,t.life);
+      ctx.font = '800 14px "Segoe UI",sans-serif';
+      ctx.textAlign = "center";
+      ctx.fillStyle = t.color;
+      ctx.fillText(t.text,s.x,s.y);
+    }
+    ctx.globalAlpha = 1;
 
     drawWeaponAndCrosshair();
   }
 
+  let lastTime = performance.now();
+
   function loop(now) {
-    const dt = Math.min(0.05, (now - lastTime) / 1000);
+    const rawDt = Math.max(0,(now-lastTime)/1000);
     lastTime = now;
-    update(dt);
+
+    // При длительной потере активности раунд ставится на паузу.
+    if (state==="playing" && rawDt>.5) pauseSession();
+
+    update(Math.min(rawDt,.1));
     render();
     requestAnimationFrame(loop);
   }
-  requestAnimationFrame(loop);
 
-  // Управление мышью (Pointer Lock 3D вращение камеры)
-  window.addEventListener('mousemove', (e) => {
-    if (state !== 'playing') return;
-    if (document.pointerLockElement !== canvas) return;
+  addEventListener("mousemove",e => {
+    if (state!=="playing" || document.pointerLockElement!==canvas) return;
 
-    const sensFactor = 0.0022 * config.sens;
-    camera.yaw += e.movementX * sensFactor;
-    camera.pitch -= e.movementY * sensFactor;
+    const sensitivity = .0022*config.sens;
+    camera.yaw += e.movementX*sensitivity;
+    camera.pitch -= e.movementY*sensitivity;
 
-    // Ограничение вертикального наклона камеры
-    const maxPitch = Math.PI * 0.44;
-    camera.pitch = Math.max(-maxPitch, Math.min(maxPitch, camera.pitch));
+    camera.yaw = Math.atan2(Math.sin(camera.yaw),Math.cos(camera.yaw));
+    camera.pitch = clamp(camera.pitch,-Math.PI*.44,Math.PI*.44);
   });
 
-  canvas.addEventListener('mousedown', (e) => {
-    if (e.button !== 0) return;
-    if (state === 'playing') {
-      if (document.pointerLockElement !== canvas && canvas.requestPointerLock) {
-        canvas.requestPointerLock();
-        return;
-      }
-      isMouseDown = true;
-      fireShot();
-    }
+  canvas.addEventListener("mousedown",e => {
+    if (e.button!==0 || state!=="playing") return;
+    if (document.pointerLockElement!==canvas) return;
+    e.preventDefault();
+    isMouseDown = true;
+    fireShot();
   });
 
-  window.addEventListener('mouseup', (e) => {
-    if (e.button === 0) isMouseDown = false;
-  });
-
-  // Клавиатура (R - быстрый рестарт)
-  window.addEventListener('keydown', (e) => {
-    if (e.code === 'KeyR' && state === 'playing') {
-      startSession();
-    }
-  });
-
-  // При выходе из Pointer Lock (например, по нажатию ESC) открываем меню паузы
-  document.addEventListener('pointerlockchange', () => {
-    if (document.pointerLockElement !== canvas && state === 'playing') {
-      state = 'menu';
+  addEventListener("mouseup",e => {
+    if (e.button===0) {
       isMouseDown = false;
-      menuOverlay.classList.remove('hidden');
+      trackTickAccum = 0;
     }
   });
 
-  // Обработчики кнопок меню
-  document.querySelectorAll('.mode-card').forEach(card => {
-    card.addEventListener('click', () => {
-      document.querySelectorAll('.mode-card').forEach(c => c.classList.remove('active'));
-      card.classList.add('active');
+  canvas.addEventListener("contextmenu",e => e.preventDefault());
+
+  addEventListener("keydown",e => {
+    if (e.code==="KeyR" && state==="playing" && !e.repeat) {
+      e.preventDefault();
+      resetSession();
+    }
+    if (e.code==="Escape" && state==="playing") pauseSession();
+  });
+
+  addEventListener("blur",pauseSession);
+  document.addEventListener("visibilitychange",() => {
+    if (document.hidden) pauseSession();
+  });
+
+  document.addEventListener("pointerlockchange",() => {
+    if (document.pointerLockElement===canvas) {
+      activatePending();
+    } else if (state==="playing") {
+      pauseSession();
+    }
+  });
+
+  document.addEventListener("pointerlockerror",() => {
+    lockFailed("Браузер не разрешил захват мыши. Нажмите кнопку ещё раз или откройте HTML отдельно.");
+  });
+
+  document.querySelectorAll(".mode-card").forEach(card => {
+    card.addEventListener("click",() => {
+      document.querySelectorAll(".mode-card").forEach(c => c.classList.remove("active"));
+      card.classList.add("active");
       config.mode = card.dataset.mode;
     });
   });
 
-  const sensInput = document.getElementById('sensInput');
-  const sensVal = document.getElementById('sensVal');
-  sensInput.addEventListener('input', () => {
-    config.sens = parseFloat(sensInput.value);
-    sensVal.textContent = config.sens.toFixed(2);
+  $("sensInput").addEventListener("input",() => {
+    config.sens = Number($("sensInput").value);
+    $("sensVal").textContent = config.sens.toFixed(2);
   });
 
-  document.querySelectorAll('#timeGroup .pill-btn').forEach(btn => {
-    btn.addEventListener('click', () => {
-      document.querySelectorAll('#timeGroup .pill-btn').forEach(b => b.classList.remove('active'));
-      btn.classList.add('active');
-      config.duration = Number(btn.dataset.time);
-      document.getElementById('timeVal').textContent = `${config.duration} сек`;
+  function bindPills(group,callback) {
+    document.querySelectorAll("#"+group+" .pill-btn").forEach(button => {
+      button.addEventListener("click",() => {
+        document.querySelectorAll("#"+group+" .pill-btn")
+          .forEach(b => b.classList.remove("active"));
+        button.classList.add("active");
+        callback(button);
+      });
     });
+  }
+
+  bindPills("timeGroup",button => {
+    config.duration = Number(button.dataset.time);
+    $("timeVal").textContent = config.duration+" сек";
   });
 
-  document.querySelectorAll('#sizeGroup .pill-btn').forEach(btn => {
-    btn.addEventListener('click', () => {
-      document.querySelectorAll('#sizeGroup .pill-btn').forEach(b => b.classList.remove('active'));
-      btn.classList.add('active');
-      config.sizeMult = Number(btn.dataset.size);
-      document.getElementById('sizeVal').textContent = btn.textContent;
-    });
+  bindPills("sizeGroup",button => {
+    config.sizeMult = Number(button.dataset.size);
+    $("sizeVal").textContent = button.textContent;
   });
 
-  document.querySelectorAll('#crossGroup .pill-btn').forEach(btn => {
-    btn.addEventListener('click', () => {
-      document.querySelectorAll('#crossGroup .pill-btn').forEach(b => b.classList.remove('active'));
-      btn.classList.add('active');
-      config.crosshairColor = btn.dataset.cross;
-      document.getElementById('crossVal').textContent = btn.textContent;
-    });
+  bindPills("crossGroup",button => {
+    config.crosshairColor = button.dataset.cross;
+    $("crossVal").textContent = button.textContent;
   });
 
-  document.getElementById('startBtn').addEventListener('click', startSession);
-  document.getElementById('retryBtn').addEventListener('click', startSession);
-  document.getElementById('backMenuBtn').addEventListener('click', () => {
-    resultOverlay.classList.add('hidden');
-    menuOverlay.classList.remove('hidden');
+  $("startBtn").addEventListener("click",() => requestPlay("start"));
+  $("retryBtn").addEventListener("click",() => requestPlay("start"));
+  $("restartBtn").addEventListener("click",() => requestPlay("start"));
+  $("resumeBtn").addEventListener("click",() => requestPlay("resume"));
+  $("backMenuBtn").addEventListener("click",goMenu);
+  $("pauseMenuBtn").addEventListener("click",goMenu);
+
+  $("fullscreenBtn").addEventListener("click",async () => {
+    try {
+      if (!document.fullscreenElement) {
+        if (document.documentElement.requestFullscreen) {
+          await document.documentElement.requestFullscreen();
+        }
+      } else if (document.exitFullscreen) {
+        await document.exitFullscreen();
+      }
+    } catch (_) {}
   });
 
-  document.getElementById('fullscreenBtn').addEventListener('click', () => {
-    if (!document.fullscreenElement) {
-      document.documentElement.requestFullscreen().catch(() => {});
-    } else {
-      document.exitFullscreen().catch(() => {});
-    }
-  });
+  updateHUD();
+  requestAnimationFrame(loop);
 })();
 </script>
 </body>
